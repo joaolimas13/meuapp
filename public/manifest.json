@@ -2,7 +2,7 @@
   "name": "Monitoramento Diário",
   "short_name": "Monitor",
   "description": "Acompanhamento de medicação, hábitos, humor e sono",
-  "start_url": "/",
+  "start_url": "/meuapp/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#aa3bff",

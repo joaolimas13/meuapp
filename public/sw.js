@@ -1,5 +1,5 @@
 const CACHE_NAME = 'meuapp-v1';
-const CORE_ASSETS = ['/', '/manifest.json', '/favicon.svg'];
+const CORE_ASSETS = ['/meuapp/', '/meuapp/manifest.json', '/meuapp/favicon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)));
