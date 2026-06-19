@@ -1,0 +1,17 @@
+{
+  "name": "Monitoramento Diário",
+  "short_name": "Monitor",
+  "description": "Acompanhamento de medicação, hábitos, humor e sono",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#aa3bff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
