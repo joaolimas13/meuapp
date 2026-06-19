@@ -1,12 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, ensureDefaultHabits } from '../db/db';
+import { db } from '../db/db';
 import { dateKey, daysAgo } from '../lib/dateUtils';
 
 export function useHabitDefs() {
-  return useLiveQuery(async () => {
-    await ensureDefaultHabits();
-    return db.habitDefs.orderBy('order').toArray();
-  }, []);
+  return useLiveQuery(() => db.habitDefs.orderBy('order').toArray(), []);
 }
 
 export function useTodayHabitLogs() {

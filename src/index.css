@@ -1,30 +1,46 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
+  --text: #6b6376;
+  --text-h: #14111c;
+  --bg: #faf9fc;
+  --surface: #ffffff;
+  --border: #e7e3ee;
+  --accent: #8b3bf0;
+  --accent-2: #c14bff;
+  --accent-bg: rgba(139, 59, 240, 0.08);
+  --accent-border: rgba(139, 59, 240, 0.35);
+  --shadow-sm: 0 1px 2px rgba(20, 17, 28, 0.04), 0 1px 1px rgba(20, 17, 28, 0.03);
+  --shadow-md: 0 4px 14px rgba(20, 17, 28, 0.07), 0 1px 3px rgba(20, 17, 28, 0.05);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --cat-medicacao: #f59e0b;
+  --cat-filho: #06b6d4;
+  --cat-empresa: #8b3bf0;
+  --cat-treino: #16a34a;
+  --cat-refeicao: #f97316;
+  --cat-sono: #6366f1;
 
-  font: 16px/145% var(--sans);
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font: 16px/150% var(--sans);
   color-scheme: light dark;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
+    --text: #a6a1b3;
+    --text-h: #f5f3f9;
+    --bg: #131017;
+    --surface: #1c1824;
+    --border: #2d2836;
+    --accent: #b873ff;
+    --accent-2: #d68bff;
+    --accent-bg: rgba(184, 115, 255, 0.14);
+    --accent-border: rgba(184, 115, 255, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -32,8 +48,9 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  background: var(--bg);
 }
 
 button {
@@ -41,12 +58,21 @@ button {
   cursor: pointer;
 }
 
-h1, h2 {
+h1, h2, h3 {
   font-family: var(--sans);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-h);
+  letter-spacing: -0.01em;
 }
 
 p {
   margin: 0;
+}
+
+::selection {
+  background: var(--accent-bg);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
 }

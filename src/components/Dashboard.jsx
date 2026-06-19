@@ -3,6 +3,15 @@ import { useTodayMedicationLog } from '../hooks/useMedication';
 import { useTodayCriteria, CRITERIA_DEFS, toggleCriterion, allCriteriaMet } from '../hooks/useCriteria';
 import { getMedicationPhase, getPhaseLabel, getGoldenWindow, isGoldenWindowActive, msToCountdown } from '../lib/pharma';
 
+const CATEGORY_ICONS = {
+  filho: '🧒',
+  medicacao: '💊',
+  empresa: '💼',
+  refeicao: '🍽️',
+  treino: '🏃',
+  sono: '🌙',
+};
+
 const TIMELINE_BLOCKS = [
   { time: '07:00', label: 'Filho + café da manhã', category: 'filho' },
   { time: '09:00', label: 'Medicação', category: 'medicacao' },
@@ -37,18 +46,22 @@ export default function Dashboard() {
   const goldenActive = isGoldenWindowActive(now);
   const toGolden = golden.start - now;
   const metAll = allCriteriaMet(criteria);
+  const metCount = CRITERIA_DEFS.filter((c) => criteria[c.key]).length;
 
   return (
     <section className="screen">
-      <h1>{greeting()}, João Pedro</h1>
+      <div className="greeting-card">
+        <h1>{greeting()}, João Pedro</h1>
+        <p>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</p>
+      </div>
 
       <div className="card">
-        <p className="muted">Status do medicamento</p>
+        <p className="eyebrow">💊 Status do medicamento</p>
         <p className="big-status">{getPhaseLabel(phase)}</p>
       </div>
 
       <div className={`card ${goldenActive ? 'card-highlight' : ''}`}>
-        <p className="muted">Janela de ouro</p>
+        <p className="eyebrow">✨ Janela de ouro</p>
         {goldenActive ? (
           <p className="big-status">Ativa agora — celular fora de alcance</p>
         ) : toGolden > 0 ? (
@@ -61,8 +74,13 @@ export default function Dashboard() {
       <h2>Linha do tempo</h2>
       <ol className="timeline">
         {TIMELINE_BLOCKS.map((b) => (
-          <li key={b.time} className={`timeline-item cat-${b.category}`}>
+          <li
+            key={b.time}
+            className="timeline-item"
+            style={{ '--cat-color': `var(--cat-${b.category})` }}
+          >
             <span className="timeline-time">{b.time}</span>
+            <span className="timeline-icon">{CATEGORY_ICONS[b.category]}</span>
             <span>{b.label}</span>
           </li>
         ))}
@@ -81,7 +99,7 @@ export default function Dashboard() {
           </label>
         ))}
         <p className={`reward-indicator ${metAll ? 'unlocked' : 'locked'}`}>
-          {metAll ? 'Videogame liberado' : 'Videogame bloqueado'}
+          {metAll ? '🎮 Videogame liberado' : `🔒 Videogame bloqueado (${metCount}/3)`}
         </p>
       </div>
     </section>

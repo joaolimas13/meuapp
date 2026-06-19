@@ -8,12 +8,12 @@ import SleepImport from './components/SleepImport';
 import ReportExport from './components/ReportExport';
 
 const TABS = [
-  { key: 'dashboard', label: 'Hoje', component: Dashboard },
-  { key: 'medication', label: 'Remédio', component: MedicationLog },
-  { key: 'habits', label: 'Hábitos', component: HabitChecklist },
-  { key: 'mood', label: 'Humor', component: MoodLog },
-  { key: 'sleep', label: 'Sono', component: SleepImport },
-  { key: 'report', label: 'Relatório', component: ReportExport },
+  { key: 'dashboard', label: 'Hoje', icon: '🏠', component: Dashboard },
+  { key: 'medication', label: 'Remédio', icon: '💊', component: MedicationLog },
+  { key: 'habits', label: 'Hábitos', icon: '✅', component: HabitChecklist },
+  { key: 'mood', label: 'Humor', icon: '🙂', component: MoodLog },
+  { key: 'sleep', label: 'Sono', icon: '🌙', component: SleepImport },
+  { key: 'report', label: 'Relatório', icon: '📄', component: ReportExport },
 ];
 
 export default function App() {
@@ -32,6 +32,7 @@ export default function App() {
             className={`nav-button ${active === t.key ? 'nav-active' : ''}`}
             onClick={() => setActive(t.key)}
           >
+            <span className="nav-icon">{t.icon}</span>
             {t.label}
           </button>
         ))}

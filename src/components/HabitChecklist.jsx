@@ -35,7 +35,7 @@ export default function HabitChecklist() {
     <section className="screen">
       <h1>Hábitos</h1>
 
-      <p className="muted">{streak} dia(s) seguidos protegendo a janela de ouro</p>
+      <span className="streak-badge">✨ {streak} dia(s) seguidos protegendo a janela de ouro</span>
 
       <div className="card">
         {(defs || []).map((h) => (
