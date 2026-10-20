@@ -1,4 +1,4 @@
-import { MEMORY_CATEGORIES } from '../../../shared/types'
+import { MEMORY_CATEGORIES, ORDER_CATEGORY } from '../../../shared/types'
 import type { ToolDef } from '../ai/types'
 import { nextStep } from '../db/tasksRepo'
 import { localNow, norm } from '../lib/time'
@@ -156,6 +156,33 @@ export const TOOL_DEFS: ToolDef[] = [
         date: { type: 'string', description: 'Para metas diárias: AAAA-MM-DD. Padrão: hoje.' },
       },
       required: ['title', 'kind'],
+    },
+  },
+  {
+    name: 'create_order',
+    description: 'Registra um pedido de cliente do negócio de impressão 3D, só para lembrar do prazo de entrega (o GAIA avisa no dia anterior e no dia). Finanças ficam em outro app.',
+    parameters: {
+      type: 'object',
+      properties: {
+        client: { type: 'string', description: 'Nome do cliente.' },
+        item: { type: 'string', description: 'O que foi pedido.' },
+        due_at: { type: 'string', description: 'Prazo de entrega: "AAAA-MM-DD" (ou com horário "AAAA-MM-DDTHH:MM").' },
+      },
+      required: ['client', 'item', 'due_at'],
+    },
+  },
+  {
+    name: 'add_content_idea',
+    description: 'Guarda uma ideia de conteúdo para o Instagram (Reel, post ou story) no banco de ideias, ou no calendário se houver data.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'A ideia.' },
+        product: { type: 'string', description: 'Produto relacionado (opcional).' },
+        kind: { type: 'string', enum: ['reel', 'post', 'story'] },
+        date: { type: 'string', description: 'Dia planejado AAAA-MM-DD (opcional; sem data vai para o banco de ideias).' },
+      },
+      required: ['title'],
     },
   },
   {
@@ -319,6 +346,25 @@ function execute(name: string, a: Obj, s: Services): ToolOutcome {
         response: { ok: true, id: g.id },
         action: { ok: true, text: `Meta ${kind === 'fixed' ? 'fixa' : 'do dia'} criada: ${g.title}` },
       }
+    }
+
+    case 'create_order': {
+      const due = optDue(a, 'due_at')
+      if (!due) throw new BadRequest('"due_at" é obrigatório (prazo de entrega).')
+      const client = reqStr(a, 'client', 80)
+      const item = reqStr(a, 'item', 120)
+      const t = s.tasks.create({ title: `Pedido · ${client} — ${item}`, dueAt: due, category: ORDER_CATEGORY, insistence: 'max', priority: 'high' })
+      return { response: { ok: true, id: t.id, due_at: due }, action: { ok: true, text: `Pedido registrado: ${client} — ${item} (entrega ${due.slice(0, 10)})` } }
+    }
+
+    case 'add_content_idea': {
+      const post = s.content.create({
+        title: reqStr(a, 'title', 200),
+        product: optStr(a, 'product', 100),
+        kind: optEnum(a, 'kind', ['reel', 'post', 'story'] as const),
+        date: optStr(a, 'date', 10) ?? null,
+      })
+      return { response: { ok: true, id: post.id }, action: { ok: true, text: `Ideia de conteúdo guardada: ${post.title}` } }
     }
 
     case 'where_was_i': {

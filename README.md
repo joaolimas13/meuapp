@@ -2,7 +2,7 @@
 
 Painel de comando pessoal para ficar ligado em uma tela dedicada, inspirado no J.A.R.V.I.S. e no GAIA de Horizon Zero Dawn.
 
-**Status:** Fase 5 (voz: microfone, palavra de ativação "Gaia", resposta falada, captura rápida pelo celular). Próxima: Fase 6 (Negócio 3D).
+**Status:** Fase 6 enxuta (pedidos só como lembrete de prazo + calendário de conteúdo do Instagram). Finanças e gestão do negócio ficam em outro app, por escolha sua.
 
 ## Privacidade
 
@@ -138,3 +138,14 @@ O netbook precisa estar ligado e com internet.
 **Não testado por mim:** Tailscale, o microfone real, as vozes do seu sistema e o Chrome do seu Android (testei com microfone e voz simulados e a página em um navegador de teste).
 
 Testes: `npm test` (backend) — 62 testes.
+
+## Fase 6 (versão enxuta) — Pedidos e Conteúdo
+
+Por decisão sua, o módulo "Negócio 3D" completo (kanban, estoque, orçamento, financeiro) **não foi feito**: isso fica no seu outro app. O painel de exemplo foi removido.
+
+- **Pedidos** (`P`): cliente + o que foi pedido + data de entrega. O GAIA avisa às **09:00 do dia anterior** e **09:00 do dia da entrega**, com a insistência máxima (som e voz, como os outros lembretes). **Entregue** conclui; **+1 dia** adia. Cada pedido é uma tarefa com categoria `pedido`, então também aparece em Tarefas e funciona por voz ("feito", "adiar").
+- **Conteúdo** (`K`): calendário dos próximos 14 dias, **banco de ideias** (ideia sem data), tipo (reel/post/story), produto e **checklist de produção** (roteiro, gravação, edição, legenda, postado). Escolha os **dias de postagem** (padrão seg/qua/sex) e o horário do lembrete (padrão 10:00).
+- **"Hoje é dia de postar"**: cartão na tela principal. No horário o GAIA avisa uma vez por dia por voz, se ainda não houver post marcado como postado. Sem cobrança: se não postou, o cartão só mostra o planejado.
+- Pelo chat/voz: "registre o pedido da Maria, miniatura do gato, entrega dia 25" e "guarda a ideia de Reel do chaveiro".
+
+Testes: `npm test` (backend) — 64 testes.

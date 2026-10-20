@@ -144,6 +144,20 @@ const MIGRATIONS: string[] = [
      (2,'Chaves',1), (2,'Carteira',2), (2,'Celular',3),
      (3,'Guardar as chaves no lugar',1), (3,'Celular para carregar',2),
      (4,'Separar a roupa de amanhã',1), (4,'Celular no carregador',2), (4,'Desacelerar: luz baixa, sem telas',3);`,
+
+  // v4 — calendário de conteúdo (Instagram) e banco de ideias
+  `CREATE TABLE content_posts (
+     id         INTEGER PRIMARY KEY AUTOINCREMENT,
+     title      TEXT NOT NULL,
+     kind       TEXT NOT NULL DEFAULT 'reel' CHECK (kind IN ('reel','post','story')),
+     product    TEXT NOT NULL DEFAULT '',
+     notes      TEXT NOT NULL DEFAULT '',
+     date       TEXT,
+     steps      TEXT NOT NULL DEFAULT '[]',
+     posted_at  TEXT,
+     created_at TEXT NOT NULL DEFAULT (${NOW})
+   );
+   CREATE INDEX idx_content_date ON content_posts(date);`,
 ]
 
 function migrate(db: DB) {

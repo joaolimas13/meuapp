@@ -8,6 +8,7 @@ export const DEFAULT_GENERAL: GeneralSettings = {
   quietEnd: '06:00',
   dnd: false,
   shift: { enabled: false, anchorDate: null, workDays: 1, offDays: 3 }, // 24h de trabalho / 72h de folga
+  content: { days: [1, 3, 5], remindAt: '10:00' }, // seg, qua, sex
 }
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -19,14 +20,19 @@ export class SettingsRepo {
   general(): GeneralSettings {
     const r = this.db.prepare("SELECT value FROM settings WHERE key = 'general'").get() as { value: string } | undefined
     const saved = r ? (JSON.parse(r.value) as Partial<GeneralSettings>) : {}
-    return { ...DEFAULT_GENERAL, ...saved, shift: { ...DEFAULT_GENERAL.shift, ...(saved.shift ?? {}) } }
+    return { ...DEFAULT_GENERAL, ...saved, shift: { ...DEFAULT_GENERAL.shift, ...(saved.shift ?? {}) }, content: { ...DEFAULT_GENERAL.content, ...(saved.content ?? {}) } }
   }
 
-  saveGeneral(patch: Partial<GeneralSettings> & { shift?: Partial<GeneralSettings['shift']> }): GeneralSettings {
+  saveGeneral(patch: Partial<GeneralSettings> & { shift?: Partial<GeneralSettings['shift']>; content?: Partial<GeneralSettings['content']> }): GeneralSettings {
     const cur = this.general()
-    const next: GeneralSettings = { ...cur, ...patch, shift: { ...cur.shift, ...(patch.shift ?? {}) } }
+    const next: GeneralSettings = { ...cur, ...patch, shift: { ...cur.shift, ...(patch.shift ?? {}) }, content: { ...cur.content, ...(patch.content ?? {}) } }
     if (!HHMM.test(next.quietStart) || !HHMM.test(next.quietEnd)) throw new BadRequest('Horários de silêncio devem ser HH:MM.')
     if (typeof next.dnd !== 'boolean') throw new BadRequest('"dnd" deve ser verdadeiro ou falso.')
+    const c = next.content
+    if (!Array.isArray(c.days) || c.days.some((d) => !Number.isInteger(d) || d < 0 || d > 6) || !HHMM.test(c.remindAt)) {
+      throw new BadRequest('Dias de postagem (0 a 6) ou horário inválidos.')
+    }
+    next.content = { days: [...new Set(c.days)].sort(), remindAt: c.remindAt }
     const sh = next.shift
     if (sh.anchorDate !== null && !isDate(sh.anchorDate)) throw new BadRequest('Data da escala inválida.')
     if (!Number.isInteger(sh.workDays) || !Number.isInteger(sh.offDays) || sh.workDays < 1 || sh.offDays < 0 || sh.workDays + sh.offDays > 30) {

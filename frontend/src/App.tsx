@@ -1,7 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { OrbState } from '../../shared/types'
-import { BusinessPanel } from './components/BusinessPanel'
+import { ORDER_CATEGORY, type OrbState } from '../../shared/types'
+import { ContentCard } from './components/ContentCard'
+import { ContentTab } from './components/ContentTab'
+import { OrdersPanel } from './components/OrdersPanel'
+import { PedidosTab } from './components/PedidosTab'
 import { ChatPanel } from './components/ChatPanel'
 import { AlertBanner } from './components/AlertBanner'
 import { DayTab } from './components/DayTab'
@@ -30,14 +33,13 @@ import { useToday } from './hooks/useToday'
 import { api } from './lib/api'
 import { useNightMode } from './hooks/useNightMode'
 import { CONFIG } from './lib/config'
-import { BUSINESS } from './lib/sampleData'
 import { playCue, speak, unlockAudio } from './lib/sound'
 import { useVoice } from './hooks/useVoice'
 import { TokenGate } from './components/TokenGate'
 import type { VoiceCommand } from '../../shared/voiceCommands'
 
 // Teclas de teste do orbe. Com o chat aberto, o estado real (pensando/falando) tem prioridade.
-const TAB_KEYS: Record<string, TabId> = { c: 'chat', i: 'inbox', t: 'tasks', d: 'day', m: 'memories', e: 'growth', r: 'routine' }
+const TAB_KEYS: Record<string, TabId> = { c: 'chat', i: 'inbox', t: 'tasks', d: 'day', p: 'orders', k: 'content', m: 'memories', e: 'growth', r: 'routine' }
 
 const STATE_KEYS: Record<string, OrbState> = {
   '1': 'idle',
@@ -71,6 +73,7 @@ export default function App() {
   const today = useToday(version)
   const growth = useLoad(() => api.devDay(), [version])
   const inbox = useLoad(api.inbox, [version])
+  const openTasks = useLoad(() => api.tasks('todo'), [version])
   const todayStr = today.data?.date ?? new Date().toLocaleDateString('sv-SE')
 
   const mutate = (fn: () => Promise<unknown>) => fn().then(bump).catch(() => bump())
@@ -208,10 +211,10 @@ export default function App() {
             className="hud-title border px-3 py-1"
             style={{ borderColor: tab ? 'var(--cyan)' : 'var(--line)', fontSize: '0.65rem' }}
           >
-            Painel [C·I·T·D·M·E·R]{inbox.data && inbox.data.length > 0 ? ` · ${inbox.data.length}` : ''}
+            Painel [C·I·T·D·P·K·M·E·R]{inbox.data && inbox.data.length > 0 ? ` · ${inbox.data.length}` : ''}
           </button>
           <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
-            v0.5 · FASE 5
+            v0.6 · FASE 6
           </span>
         </div>
       </header>
@@ -251,7 +254,8 @@ export default function App() {
             />
           )}
           {today.error && <div className="mono text-sm" style={{ color: 'var(--amber)' }} role="alert">! {today.error}</div>}
-          <BusinessPanel data={BUSINESS} delay={0.5} />
+          <OrdersPanel orders={(openTasks.data ?? []).filter((t) => t.category === ORDER_CATEGORY)} today={todayStr} onOpen={() => setTab('orders')} delay={0.5} />
+          <ContentCard version={version} onChanged={bump} onOpen={() => setTab('content')} delay={0.6} />
         </motion.div>
       </main>
 
@@ -287,6 +291,8 @@ export default function App() {
             {tab === 'tasks' && <TasksTab version={version} today={todayStr} onChanged={bump} askGaia={askGaia} />}
             {tab === 'day' && <DayTab version={version} onChanged={bump} />}
             {tab === 'routine' && <RoutineTab onChanged={bump} />}
+            {tab === 'orders' && <PedidosTab version={version} today={todayStr} onChanged={bump} />}
+            {tab === 'content' && <ContentTab version={version} today={todayStr} onChanged={bump} />}
             {tab === 'memories' && <MemoriesTab version={version} />}
             {tab === 'growth' && <GrowthTab version={version} today={todayStr} onChanged={bump} />}
           </Drawer>

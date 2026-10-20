@@ -260,13 +260,43 @@ export interface GeneralSettings {
     workDays: number
     offDays: number
   }
+  /** Constância no Instagram: dias da semana de postagem (0=domingo) e horário do lembrete. */
+  content: { days: number[]; remindAt: string }
 }
 
-// ---------------------------------------------------------------- Negócio (exemplo até a Fase 6)
+// ---------------------------------------------------------------- Pedidos e conteúdo (negócio 3D, versão enxuta)
 
-export interface BusinessSummary {
-  inProgress: number
-  nextDelivery: string
-  lowFilament: string
-  pendingPayments: number
+/** Categoria das tarefas que são pedidos de clientes (só lembrar prazos; finanças ficam em outro app). */
+export const ORDER_CATEGORY = 'pedido'
+
+export const CONTENT_STEPS = ['roteiro', 'gravacao', 'edicao', 'legenda', 'postado'] as const
+export type ContentStep = (typeof CONTENT_STEPS)[number]
+export const CONTENT_KINDS = ['reel', 'post', 'story'] as const
+export type ContentKind = (typeof CONTENT_KINDS)[number]
+
+export interface ContentPost {
+  id: number
+  title: string
+  kind: ContentKind
+  /** Produto ao qual a ideia se refere (ex.: "chaveiro de pet"). */
+  product: string
+  notes: string
+  /** Dia planejado (AAAA-MM-DD). null = está no banco de ideias. */
+  date: string | null
+  /** Etapas da produção já concluídas. */
+  steps: ContentStep[]
+  posted: boolean
+  createdAt: string
+}
+
+export interface ContentToday {
+  date: string
+  /** Hoje é um dia de postagem configurado. */
+  postingDay: boolean
+  /** Dia de postar e ainda não postou. */
+  pending: boolean
+  /** Já passou do horário do lembrete. */
+  remindNow: boolean
+  remindAt: string
+  post: ContentPost | null
 }

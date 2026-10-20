@@ -4,6 +4,9 @@ import type {
   AlertsView,
   Anchor,
   Bridge,
+  ContentPost,
+  ContentStep,
+  ContentToday,
   DailyReview,
   DayPlan,
   DevDay,
@@ -71,6 +74,8 @@ export interface NewTaskBody {
   title: string
   dueAt?: string | null
   priority?: Task['priority']
+  category?: string
+  insistence?: Task['insistence']
   steps?: { title: string; minutes?: number }[]
 }
 
@@ -122,6 +127,14 @@ export const api = {
   review: () => req<DailyReview>('GET', '/api/review/daily'),
   settings: () => req<GeneralSettings>('GET', '/api/settings/general'),
   saveSettings: (b: Record<string, unknown>) => req<GeneralSettings>('PUT', '/api/settings/general', b),
+
+  // conteúdo (Instagram)
+  content: () => req<{ posts: ContentPost[]; ideas: ContentPost[] }>('GET', '/api/content'),
+  contentToday: () => req<ContentToday>('GET', '/api/content/today'),
+  addContent: (b: { title: string; kind?: string; product?: string; date?: string | null }) => req<ContentPost>('POST', '/api/content', b),
+  updateContent: (id: number, b: { title?: string; date?: string | null }) => req<ContentPost>('PATCH', `/api/content/${id}`, b),
+  contentStep: (id: number, step: ContentStep, done: boolean) => req<ContentPost>('PUT', `/api/content/${id}/steps`, { step, done }),
+  deleteContent: (id: number) => req<void>('DELETE', `/api/content/${id}`),
 
   // desenvolvimento pessoal
   devDay: (date?: string) => req<DevDay>('GET', `/api/dev/day${date ? `?date=${date}` : ''}`),

@@ -4,6 +4,7 @@ import { AnchorsRepo } from './db/anchorsRepo'
 import { ChatRepo } from './db/chatRepo'
 import { FocusRepo } from './db/focusRepo'
 import { SettingsRepo } from './db/settingsRepo'
+import { ContentRepo } from './db/contentRepo'
 import { DevRepo } from './db/devRepo'
 import { InboxRepo } from './db/inboxRepo'
 import type { DB } from './db'
@@ -23,6 +24,7 @@ export interface Services {
   dev: DevService
   focus: FocusRepo
   anchors: AnchorsRepo
+  content: ContentRepo
   settings: SettingsRepo
   /** Relógio injetável (os testes fixam a hora). */
   now: () => Date
@@ -42,6 +44,7 @@ export function createServices(deps: { config: Config; provider: AIProvider; db:
     dev: new DevService(new DevRepo(deps.db)),
     focus: new FocusRepo(deps.db),
     anchors: new AnchorsRepo(deps.db),
+    content: new ContentRepo(deps.db),
     settings: new SettingsRepo(deps.db),
     now,
     local: () => localNow(deps.config.timezone, now()),

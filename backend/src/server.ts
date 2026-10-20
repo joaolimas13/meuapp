@@ -7,6 +7,7 @@ import type { DB } from './db'
 import crypto from 'node:crypto'
 import { BadRequest } from './lib/validate'
 import { chatRoutes } from './routes/chat'
+import { contentRoutes } from './routes/content'
 import { devRoutes } from './routes/dev'
 import { inboxRoutes } from './routes/inbox'
 import { memoryRoutes } from './routes/memories'
@@ -63,6 +64,7 @@ export function buildServer(deps: Deps): FastifyInstance {
   memoryRoutes(app, s)
   devRoutes(app, s)
   routineRoutes(app, s)
+  contentRoutes(app, s)
 
   // Serve a interface compilada (npm run build) quando existir: um único servidor para tudo.
   if (fs.existsSync(deps.config.staticDir)) {

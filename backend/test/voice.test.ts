@@ -35,6 +35,8 @@ test('foco, onde parei, abrir painéis e conversa', () => {
   assert.deepEqual(P('gaia sair do foco'), { type: 'focus', on: false })
   assert.deepEqual(P('Gaia, abrir tarefas'), { type: 'open', tab: 'tasks' })
   assert.deepEqual(P('gaia mostra a evolução'), { type: 'open', tab: 'growth' })
+  assert.deepEqual(P('Gaia abrir pedidos'), { type: 'open', tab: 'orders' })
+  assert.deepEqual(P('gaia mostra o calendário de conteúdo'), { type: 'open', tab: 'content' })
   assert.deepEqual(P('gaia fechar'), { type: 'close' })
   assert.deepEqual(P('Gaia, quanto é 15% de 240?'), { type: 'chat', text: 'Gaia, quanto é 15% de 240?' })
   assert.deepEqual(P('quanto é 2 mais 2', false), { type: 'chat', text: 'quanto é 2 mais 2' })

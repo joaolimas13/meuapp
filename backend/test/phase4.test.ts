@@ -156,3 +156,53 @@ test('API plano, revisão e configurações', async () => {
   assert.equal((await call('GET', '/api/plan')).json.workDay, true)
   await call('PUT', '/api/settings/general', { dnd: false })
 })
+
+// ------------------------------------------------------------------ pedidos e conteúdo
+test('pedido só com data avisa às 09:00 do dia anterior e do dia da entrega', () => {
+  const pedido = task({ id: 7, title: 'Pedido · Maria — gato', dueAt: '2026-10-21', category: 'pedido', insistence: 'max' })
+  const at = (date: string, time: string) => ({ date, time })
+  assert.equal(computeAlerts([pedido], at('2026-10-20', '08:00'), G, new Map()).length, 0)
+  const d1 = computeAlerts([pedido], at('2026-10-20', '09:02'), G, new Map())
+  assert.equal(d1.length, 1)
+  assert.match(d1[0].title, /Entrega amanhã/)
+  assert.equal(d1[0].level, 1)
+  const d0 = computeAlerts([pedido], at('2026-10-21', '09:00'), G, new Map())
+  assert.match(d0[0].title, /Entrega hoje/)
+  assert.notEqual(d1[0].key, d0[0].key)
+  // tarefa comum com só data continua sem alerta
+  assert.equal(computeAlerts([task({ dueAt: '2026-10-21' })], at('2026-10-21', '09:10'), G, new Map()).length, 0)
+})
+
+test('API conteúdo: ideias, calendário, etapas e lembrete de constância', async () => {
+  const idea = (await call('POST', '/api/content', { title: 'Reel: chaveiro de pet', product: 'chaveiro', kind: 'reel' })).json
+  assert.equal(idea.date, null)
+  const planned = (await call('POST', '/api/content', { title: 'Bastidores da impressão', date: '2026-10-20' })).json // terça
+  let list = (await call('GET', '/api/content')).json
+  assert.equal(list.ideas.length, 1)
+  assert.equal(list.posts.length, 1)
+  // terça (2) não é dia de postagem padrão (seg/qua/sex)
+  assert.equal((await call('GET', '/api/content/today')).json.postingDay, false)
+  await call('PUT', '/api/settings/general', { content: { days: [2] } })
+  let td = (await call('GET', '/api/content/today')).json
+  assert.equal(td.postingDay, true)
+  assert.equal(td.pending, true)
+  assert.equal(td.post.title, 'Bastidores da impressão')
+  assert.equal(td.remindNow, true) // 15:00 >= 10:00
+  // agendar a ideia e concluir etapas
+  assert.equal((await call('PATCH', `/api/content/${idea.id}`, { date: '2026-10-22' })).json.date, '2026-10-22')
+  let p = (await call('PUT', `/api/content/${planned.id}/steps`, { step: 'gravacao', done: true })).json
+  assert.deepEqual(p.steps, ['gravacao'])
+  p = (await call('PUT', `/api/content/${planned.id}/steps`, { step: 'roteiro', done: true })).json
+  assert.deepEqual(p.steps, ['roteiro', 'gravacao']) // ordem da produção
+  assert.equal(p.posted, false)
+  p = (await call('PUT', `/api/content/${planned.id}/steps`, { step: 'postado', done: true })).json
+  assert.equal(p.posted, true)
+  td = (await call('GET', '/api/content/today')).json
+  assert.equal(td.pending, false) // já postou hoje
+  assert.equal((await call('PUT', `/api/content/${planned.id}/steps`, { step: 'x', done: true })).status, 400)
+  assert.equal((await call('PUT', '/api/settings/general', { content: { days: [9] } })).status, 400)
+  assert.equal((await call('DELETE', `/api/content/${idea.id}`)).status, 204)
+  assert.equal((await call('DELETE', '/api/content/999')).status, 404)
+  list = (await call('GET', '/api/content')).json
+  assert.equal(list.ideas.length, 0)
+})
