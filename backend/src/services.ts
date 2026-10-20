@@ -1,6 +1,9 @@
 import type { AIProvider } from './ai'
 import type { Config } from './config'
+import { AnchorsRepo } from './db/anchorsRepo'
 import { ChatRepo } from './db/chatRepo'
+import { FocusRepo } from './db/focusRepo'
+import { SettingsRepo } from './db/settingsRepo'
 import { DevRepo } from './db/devRepo'
 import { InboxRepo } from './db/inboxRepo'
 import type { DB } from './db'
@@ -18,6 +21,9 @@ export interface Services {
   memories: MemoriesRepo
   inbox: InboxRepo
   dev: DevService
+  focus: FocusRepo
+  anchors: AnchorsRepo
+  settings: SettingsRepo
   /** Relógio injetável (os testes fixam a hora). */
   now: () => Date
   /** Data e hora locais agora, no fuso configurado. */
@@ -34,6 +40,9 @@ export function createServices(deps: { config: Config; provider: AIProvider; db:
     memories: new MemoriesRepo(deps.db),
     inbox: new InboxRepo(deps.db),
     dev: new DevService(new DevRepo(deps.db)),
+    focus: new FocusRepo(deps.db),
+    anchors: new AnchorsRepo(deps.db),
+    settings: new SettingsRepo(deps.db),
     now,
     local: () => localNow(deps.config.timezone, now()),
   }

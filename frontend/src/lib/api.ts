@@ -1,6 +1,14 @@
 // Cliente da API do backend. Em desenvolvimento o Vite encaminha /api para a porta 8787.
 import type {
+  Alert,
+  AlertsView,
+  Anchor,
+  Bridge,
+  DailyReview,
+  DayPlan,
   DevDay,
+  FocusView,
+  GeneralSettings,
   InboxItem,
   InboxSuggestion,
   Memory,
@@ -63,6 +71,7 @@ export interface NewTaskBody {
   steps?: { title: string; minutes?: number }[]
 }
 
+export type { Alert }
 export const api = {
   // tarefas
   today: () => req<TodayView>('GET', '/api/today'),
@@ -92,6 +101,24 @@ export const api = {
   updateMemory: (id: number, b: { text?: string; category?: string; importance?: number }) =>
     req<Memory>('PATCH', `/api/memories/${id}`, b),
   deleteMemory: (id: number) => req<void>('DELETE', `/api/memories/${id}`),
+
+  // alertas, foco, ponte, âncoras, plano
+  alerts: () => req<AlertsView>('GET', '/api/alerts'),
+  snooze: (id: number, minutes: number) => req<{ until: string }>('POST', `/api/tasks/${id}/snooze`, { minutes }),
+  focus: () => req<FocusView>('GET', '/api/focus'),
+  startFocus: (b: { taskId?: number | null; title?: string; minutes: number; breakMinutes: number }) => req<FocusView>('POST', '/api/focus', b),
+  finishFocus: (id: number, b: { outcome: 'done' | 'continue' | 'switch' | 'interrupted'; note?: string; nextStep?: string }) =>
+    req<FocusView>('POST', `/api/focus/${id}/finish`, b),
+  bridge: () => req<{ bridge: Bridge | null; focus: unknown }>('GET', '/api/bridge'),
+  resolveBridge: (id: number) => req<void>('POST', `/api/bridge/${id}/resolve`),
+  anchors: () => req<{ anchors: Anchor[] }>('GET', '/api/anchors').then((r) => r.anchors),
+  checkAnchorItem: (id: number, done: boolean) => req<{ anchors: Anchor[] }>('PUT', `/api/anchor-items/${id}/check`, { done }).then((r) => r.anchors),
+  addAnchorItem: (anchorId: number, text: string) => req<{ anchors: Anchor[] }>('POST', `/api/anchors/${anchorId}/items`, { text }).then((r) => r.anchors),
+  deleteAnchorItem: (id: number) => req<void>('DELETE', `/api/anchor-items/${id}`),
+  plan: () => req<DayPlan>('GET', '/api/plan'),
+  review: () => req<DailyReview>('GET', '/api/review/daily'),
+  settings: () => req<GeneralSettings>('GET', '/api/settings/general'),
+  saveSettings: (b: Record<string, unknown>) => req<GeneralSettings>('PUT', '/api/settings/general', b),
 
   // desenvolvimento pessoal
   devDay: (date?: string) => req<DevDay>('GET', `/api/dev/day${date ? `?date=${date}` : ''}`),

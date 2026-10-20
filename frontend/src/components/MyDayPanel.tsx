@@ -6,7 +6,7 @@ import { Panel } from './Panel'
   "Meu Dia": no máximo 3 prioridades (redução de sobrecarga).
   A primeira vira a "prioridade atual". Se a tarefa tem passos, mostra só o PRÓXIMO passo.
 */
-export function MyDayPanel({ items, onComplete, delay }: { items: Task[]; onComplete: (id: number) => void; delay?: number }) {
+export function MyDayPanel({ items, onComplete, onFocus, delay }: { items: Task[]; onComplete: (id: number) => void; onFocus: (id: number) => void; delay?: number }) {
   const top3 = items.slice(0, 3)
   return (
     <Panel title="Meu dia" delay={delay}>
@@ -29,6 +29,7 @@ export function MyDayPanel({ items, onComplete, delay }: { items: Task[]; onComp
                   )}
                 </span>
               </button>
+              {i === 0 && <button type="button" className="hud-btn mt-1 ml-8" onClick={() => onFocus(t.id)}>Focar nisso</button>}
             </li>
           )
         })}

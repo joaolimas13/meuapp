@@ -2,7 +2,7 @@
 
 Painel de comando pessoal para ficar ligado em uma tela dedicada, inspirado no J.A.R.V.I.S. e no GAIA de Horizon Zero Dawn.
 
-**Status:** Fase 3 (chat com IA, memórias, tarefas, Caixa de entrada e Evolução pessoal). Lembretes sonoros, modo foco e voz entram nas próximas fases (veja `docs/arquitetura.md`).
+**Status:** Fase 4 (lembretes escalonados com som e voz, Modo Foco, âncoras de rotina, "onde eu parei", plano e revisão do dia, escala 24/72). Voz de entrada (microfone) é a Fase 5.
 
 ## Privacidade
 
@@ -97,3 +97,19 @@ O chat já é real. Já os painéis "Meu dia", "Lembretes", "Negócio 3D" e o "P
 **Ainda de exemplo:** o painel "Negócio 3D" (Fase 6). **Ainda não existe:** alerta sonoro/falado (Fases 4–5).
 
 Testes: `npm test` (backend) — 46 testes.
+
+## Fase 4 — o que há de novo
+
+- **Lembretes escalonados:** tarefa com horário avisa discretamente 30/15/5 min antes (insistência média ou máxima). No horário a tela pulsa e toca um som (nível 1); aos 5 min o GAIA **fala** (nível 2); insistência máxima repete em intervalos crescentes (15, 30, 60, 120, 240 min) até você responder **Feito / Adiar 10 min / Cancelar**. A insistência é por tarefa: baixa (até 15 min), média (até 60), máxima (até 4 h). Depois disso para de insistir e a tarefa vira "Remarcar?".
+- **Som e voz:** o navegador só libera áudio depois de **um toque ou tecla** na página. Em modo quiosque, dê um toque ao ligar o computador. Ligue/desligue som e voz na aba Rotina. A voz usa as vozes pt-BR do sistema (Web Speech).
+- **Silêncio / Não perturbe:** das 23:00 às 06:00 (configurável) tudo fica só visual. Aba **Rotina**.
+- **Modo Foco** (`F`): só a tarefa atual, o próximo passo e um timer (25/5, 50/10 ou 15/3). Ao fim do bloco: Terminei / Mais um bloco / Trocar. Trocar ou parar guarda **onde você parou** e o próximo passo.
+- **Onde eu parei:** um cartão aparece na tela principal ("Você estava fazendo X, o próximo passo era Y. Retomamos?"). Também dá para perguntar ao GAIA no chat.
+- **Âncoras de rotina** (aba Rotina): ao acordar, antes de sair, ao chegar, antes de dormir, com checklists editáveis e marcação por dia.
+- **Dia** (`D`): plano sugerido com blocos de horário (tarefas com horário ficam fixas; as outras preenchem as lacunas) e revisão do dia, sem cobrança.
+- **Escala em ciclo** (aba Rotina): ex.: 24h de trabalho / 72h de folga. Em dia de plantão o plano fica leve (no máximo 2 tarefas flexíveis).
+- Novas ferramentas do GAIA no chat: onde parei, guardar ponto de retomada, plano do dia, revisão do dia.
+
+**Limites conhecidos:** os alertas só tocam/falam com o painel aberto no navegador; sem reconhecimento de voz (microfone) até a Fase 5; as âncoras ainda não disparam sozinhas por horário (você abre o checklist quando o momento acontece).
+
+Testes: `npm test` (backend) — 55 testes.

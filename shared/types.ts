@@ -161,6 +161,107 @@ export interface DevDay {
   stats: DevStats
 }
 
+// ---------------------------------------------------------------- Fase 4: alertas, foco, âncoras, plano
+
+/** Um alerta ativo agora. `level`: 0 discreto · 1 tela pulsa + som · 2 GAIA fala · 3 insistente. */
+export interface Alert {
+  taskId: number
+  title: string
+  dueAt: string
+  kind: 'before' | 'due'
+  level: 0 | 1 | 2 | 3
+  /** before: minutos que faltam · due: minutos desde o horário. */
+  minutes: number
+  insistence: Insistence
+  /** Muda a cada escalonamento: a tela só toca/fala de novo quando a chave muda. */
+  key: string
+}
+
+export interface AlertsView {
+  alerts: Alert[]
+  quiet: boolean
+  now: string
+}
+
+export interface FocusSession {
+  id: number
+  taskId: number | null
+  title: string
+  minutes: number
+  breakMinutes: number
+  startedAt: string
+  endedAt: string | null
+  outcome: string | null
+}
+
+export interface FocusView {
+  session: FocusSession | null
+  /** Hora do servidor (ISO), para o relógio do navegador não desalinhar o timer. */
+  serverNow: string
+}
+
+/** "Onde eu parei": o ponto de retomada salvo ao terminar/interromper um bloco. */
+export interface Bridge {
+  id: number
+  taskId: number | null
+  title: string
+  note: string
+  nextStep: string
+  createdAt: string
+}
+
+export interface AnchorItem {
+  id: number
+  text: string
+  done: boolean
+}
+
+export interface Anchor {
+  id: number
+  key: string
+  title: string
+  items: AnchorItem[]
+}
+
+export interface PlanBlock {
+  taskId: number
+  title: string
+  start: string
+  end: string
+  /** true = tem horário marcado (não se move). */
+  fixed: boolean
+}
+
+export interface DayPlan {
+  date: string
+  workDay: boolean
+  blocks: PlanBlock[]
+  unplaced: { taskId: number; title: string }[]
+}
+
+export interface DailyReview {
+  date: string
+  done: string[]
+  pending: number
+  toReschedule: { id: number; title: string }[]
+  tomorrow: string[]
+  score: number
+}
+
+export interface GeneralSettings {
+  quietStart: string
+  quietEnd: string
+  /** Não perturbar: tudo vira alerta visual discreto. */
+  dnd: boolean
+  shift: {
+    enabled: boolean
+    /** Um dia de trabalho conhecido (AAAA-MM-DD) a partir do qual o ciclo é calculado. */
+    anchorDate: string | null
+    workDays: number
+    offDays: number
+  }
+}
+
 // ---------------------------------------------------------------- Negócio (exemplo até a Fase 6)
 
 export interface BusinessSummary {

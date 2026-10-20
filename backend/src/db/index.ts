@@ -90,6 +90,60 @@ const MIGRATIONS: string[] = [
      key   TEXT PRIMARY KEY,
      value TEXT NOT NULL
    );`,
+
+  // v3 — Fase 4: soneca de lembretes, foco, pontes ("onde eu parei"), âncoras de rotina
+  `CREATE TABLE reminder_state (
+     task_id       INTEGER PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+     snoozed_until TEXT
+   );
+
+   CREATE TABLE focus_sessions (
+     id            INTEGER PRIMARY KEY AUTOINCREMENT,
+     task_id       INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+     title         TEXT NOT NULL,
+     minutes       INTEGER NOT NULL,
+     break_minutes INTEGER NOT NULL DEFAULT 5,
+     started_at    TEXT NOT NULL,
+     ended_at      TEXT,
+     outcome       TEXT
+   );
+
+   CREATE TABLE bridges (
+     id         INTEGER PRIMARY KEY AUTOINCREMENT,
+     task_id    INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+     title      TEXT NOT NULL,
+     note       TEXT NOT NULL DEFAULT '',
+     next_step  TEXT NOT NULL DEFAULT '',
+     resolved   INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL DEFAULT (${NOW})
+   );
+
+   CREATE TABLE anchors (
+     id       INTEGER PRIMARY KEY AUTOINCREMENT,
+     key      TEXT NOT NULL UNIQUE,
+     title    TEXT NOT NULL,
+     position INTEGER NOT NULL
+   );
+   CREATE TABLE anchor_items (
+     id        INTEGER PRIMARY KEY AUTOINCREMENT,
+     anchor_id INTEGER NOT NULL REFERENCES anchors(id) ON DELETE CASCADE,
+     text      TEXT NOT NULL,
+     position  INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE anchor_checks (
+     item_id INTEGER NOT NULL REFERENCES anchor_items(id) ON DELETE CASCADE,
+     date    TEXT NOT NULL,
+     PRIMARY KEY (item_id, date)
+   );
+
+   INSERT INTO anchors (key, title, position) VALUES
+     ('acordar','Ao acordar',1), ('sair','Antes de sair de casa',2),
+     ('chegar','Ao chegar em casa',3), ('dormir','Antes de dormir',4);
+   INSERT INTO anchor_items (anchor_id, text, position) VALUES
+     (1,'Beber um copo de água',1), (1,'Remédios',2),
+     (2,'Chaves',1), (2,'Carteira',2), (2,'Celular',3),
+     (3,'Guardar as chaves no lugar',1), (3,'Celular para carregar',2),
+     (4,'Separar a roupa de amanhã',1), (4,'Celular no carregador',2), (4,'Desacelerar: luz baixa, sem telas',3);`,
 ]
 
 function migrate(db: DB) {

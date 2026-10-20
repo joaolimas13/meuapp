@@ -1,14 +1,16 @@
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 
-export type TabId = 'chat' | 'inbox' | 'tasks' | 'memories' | 'growth'
+export type TabId = 'chat' | 'inbox' | 'tasks' | 'day' | 'memories' | 'growth' | 'routine'
 
 export const TABS: { id: TabId; label: string; key: string }[] = [
   { id: 'chat', label: 'Chat', key: 'C' },
   { id: 'inbox', label: 'Caixa', key: 'I' },
   { id: 'tasks', label: 'Tarefas', key: 'T' },
+  { id: 'day', label: 'Dia', key: 'D' },
   { id: 'memories', label: 'Memórias', key: 'M' },
   { id: 'growth', label: 'Evolução', key: 'E' },
+  { id: 'routine', label: 'Rotina', key: 'R' },
 ]
 
 /** Gaveta lateral com abas. O conteúdo de cada aba entra como children. */

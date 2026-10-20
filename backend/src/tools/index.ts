@@ -1,7 +1,7 @@
 import { MEMORY_CATEGORIES } from '../../../shared/types'
 import type { ToolDef } from '../ai/types'
 import { nextStep } from '../db/tasksRepo'
-import { norm } from '../lib/time'
+import { localNow, norm } from '../lib/time'
 import {
   asObj,
   BadRequest,
@@ -15,6 +15,7 @@ import {
   type Obj,
 } from '../lib/validate'
 import { describeTask } from '../planner'
+import { dailyReview, planDay } from '../schedule'
 import type { Services } from '../services'
 
 /*
@@ -157,6 +158,34 @@ export const TOOL_DEFS: ToolDef[] = [
       required: ['title', 'kind'],
     },
   },
+  {
+    name: 'where_was_i',
+    description: 'Diz onde a pessoa parou: o último ponto de retomada salvo e o bloco de foco em andamento. Use quando ela perguntar "onde eu parei?".',
+    parameters: { type: 'object', properties: {} },
+  },
+  {
+    name: 'save_bridge',
+    description: 'Guarda onde a pessoa parou e qual é o próximo passo, para retomar depois. Use quando ela disser que vai interromper algo.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'O que estava fazendo.' },
+        note: { type: 'string', description: 'Onde parou (opcional).' },
+        next_step: { type: 'string', description: 'O que vinha em seguida (opcional).' },
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'plan_day',
+    description: 'Sugere a ordem e os horários das tarefas do dia (blocos de tempo). Só sugere: a pessoa aprova e ajusta.',
+    parameters: { type: 'object', properties: { date: { type: 'string', description: 'AAAA-MM-DD. Omita para hoje.' } } },
+  },
+  {
+    name: 'daily_review',
+    description: 'Resumo do dia: o que foi feito, o que ficou para remarcar e o que olhar amanhã.',
+    parameters: { type: 'object', properties: {} },
+  },
 ]
 
 const fail = (text: string, error = text): ToolOutcome => ({ response: { error }, action: { ok: false, text } })
@@ -290,6 +319,27 @@ function execute(name: string, a: Obj, s: Services): ToolOutcome {
         response: { ok: true, id: g.id },
         action: { ok: true, text: `Meta ${kind === 'fixed' ? 'fixa' : 'do dia'} criada: ${g.title}` },
       }
+    }
+
+    case 'where_was_i': {
+      const bridge = s.focus.lastBridge()
+      const focus = s.focus.current()
+      return { response: { bridge, focus_em_andamento: focus ? { title: focus.title, started_at: focus.startedAt, minutes: focus.minutes } : null } }
+    }
+
+    case 'save_bridge': {
+      const b = s.focus.addBridge({ taskId: null, title: reqStr(a, 'title', 200), note: optStr(a, 'note', 500) ?? '', nextStep: optStr(a, 'next_step', 300) ?? '' })
+      return { response: { ok: true, id: b.id }, action: { ok: true, text: `Ponto de retomada salvo: ${b.title}` } }
+    }
+
+    case 'plan_day': {
+      const plan = planDay(s.tasks.list({ status: 'todo' }), optStr(a, 'date', 10) ?? now.date, now, s.settings.general())
+      return { response: plan }
+    }
+
+    case 'daily_review': {
+      const doneToday = s.tasks.list({ status: 'done' }).filter((t) => t.parentId === null && t.completedAt && localNow(s.config.timezone, new Date(t.completedAt)).date === now.date)
+      return { response: dailyReview(s.tasks.list({ status: 'todo' }), doneToday, now, s.dev.scoreFor(now.date).total) }
     }
 
     default:

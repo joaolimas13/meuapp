@@ -54,7 +54,7 @@ export function StatusBar({ orbState, ai, nightLabel, lite, hideHints }: Props) 
       </div>
       {!hideHints && (
         <div style={{ color: 'var(--text-dim)' }}>
-          [C·I·T·M·E] painel · TESTE: [1-5] orbe · [N] noturno ({nightLabel}) · [L] leve ({lite ? 'on' : 'off'}) ·
+          [C·I·T·D·M·E·R] painel · [F] foco · TESTE: [1-5] orbe · [N] noturno ({nightLabel}) · [L] leve ({lite ? 'on' : 'off'}) ·
           [A] ambiente
         </div>
       )}

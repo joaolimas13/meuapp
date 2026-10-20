@@ -43,3 +43,23 @@ export const dueTime = (due: string) => (due.length > 10 ? due.slice(11, 16) : n
 
 /** Remove acentos e põe em minúsculas, para buscas que ignoram "ç", "é" etc. */
 export const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+/** "AAAA-MM-DD" + "HH:MM" -> minutos desde 1970 (tratando como relógio de parede, sem fuso). */
+const wall = (dt: string) => Date.parse(`${dt.slice(0, 10)}T${dt.length > 10 ? dt.slice(11, 16) : '00:00'}:00Z`) / 60_000
+
+/** Minutos de `a` até `b` (positivo se `b` é depois). Aceita "AAAA-MM-DD[THH:MM]". */
+export const minutesBetween = (a: string, b: string) => Math.round(wall(b) - wall(a))
+
+/** Soma minutos a um "AAAA-MM-DDTHH:MM". */
+export function addMinutes(dt: string, min: number): string {
+  return new Date((wall(dt) + min) * 60_000).toISOString().slice(0, 16)
+}
+
+/** Agora local como "AAAA-MM-DDTHH:MM". */
+export const nowDt = (n: LocalNow) => `${n.date}T${n.time}`
+
+/** True se `time` (HH:MM) está na janela [start, end), que pode cruzar a meia-noite (23:00–06:00). */
+export function inWindow(time: string, start: string, end: string): boolean {
+  if (start === end) return false
+  return start < end ? time >= start && time < end : time >= start || time < end
+}
