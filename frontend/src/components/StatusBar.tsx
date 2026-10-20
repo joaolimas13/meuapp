@@ -30,15 +30,16 @@ interface Props {
   nightLabel: string
   lite: boolean
   hideHints: boolean
+  mic: { label: string; ok: boolean }
 }
 
 /** Barra de status: conexão, IA, microfone, sincronização + atalhos de teste. */
-export function StatusBar({ orbState, ai, nightLabel, lite, hideHints }: Props) {
+export function StatusBar({ orbState, ai, nightLabel, lite, hideHints, mic }: Props) {
   const online = useOnline()
   const items: { label: string; ok: boolean }[] = [
     { label: online ? 'REDE ONLINE' : 'SEM INTERNET', ok: online },
     ai,
-    { label: 'MIC DESLIGADO (FASE 5)', ok: false },
+    mic,
     { label: 'DADOS LOCAIS', ok: true },
   ]
 
@@ -54,7 +55,7 @@ export function StatusBar({ orbState, ai, nightLabel, lite, hideHints }: Props) 
       </div>
       {!hideHints && (
         <div style={{ color: 'var(--text-dim)' }}>
-          [C·I·T·D·M·E·R] painel · [F] foco · TESTE: [1-5] orbe · [N] noturno ({nightLabel}) · [L] leve ({lite ? 'on' : 'off'}) ·
+          [C·I·T·D·M·E·R] painel · [F] foco · [V] voz · TESTE: [1-5] orbe · [N] noturno ({nightLabel}) · [L] leve ({lite ? 'on' : 'off'}) ·
           [A] ambiente
         </div>
       )}

@@ -1,0 +1,11 @@
+{
+  "name": "GAIA Captura",
+  "short_name": "GAIA anota",
+  "description": "Fale e o GAIA anota na Caixa de entrada",
+  "start_url": "/captura",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#02080d",
+  "theme_color": "#02080d",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

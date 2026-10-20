@@ -63,7 +63,7 @@ gaia/
 | 2 ✔ | Chat com IA | Backend Fastify, `AIProvider`, streaming por SSE, system prompt do GAIA |
 | 3 | Memória, tarefas, inbox | SQLite (SQL puro), tool calling, captura rápida, quebra de tarefas |
 | 4 (feita) | Lembretes e foco | Agendador, lembretes escalonados, Modo Foco, âncoras, escala 24x72 |
-| 5 | Voz | SpeechRecognition e SpeechSynthesis pt-BR, orbe reagindo ao áudio real |
+| 5 (feita) | Voz | SpeechRecognition e SpeechSynthesis pt-BR, orbe reagindo ao áudio real |
 | 6 | Negócio 3D | Kanban, clientes, orçamento, filamento, financeiro separado |
 | 7 | Bem-estar | Streaks, check-in de energia, revisão semanal, estudos |
 | 8 | Polimento | PWA, quiosque, backup/exportação, configurações |

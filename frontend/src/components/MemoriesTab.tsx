@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { MEMORY_CATEGORIES, type Memory } from '../../../shared/types'
 import { useLoad } from '../hooks/useLoad'
 import { api } from '../lib/api'
+import { withToken } from '../lib/auth'
 import { ErrorLine } from './ErrorLine'
 
 /** Memórias: buscar, filtrar, adicionar, editar, apagar e exportar. Controle total é seu. */
@@ -68,8 +69,8 @@ export function MemoriesTab({ version }: { version: number }) {
         ))}
       </ul>
       <div className="mt-2 flex gap-3 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
-        <a className="hud-btn" href="/api/memories/export?format=json" download="memorias.json">Exportar JSON</a>
-        <a className="hud-btn" href="/api/memories/export?format=md" download="memorias.md">Exportar Markdown</a>
+        <a className="hud-btn" href={withToken('/api/memories/export?format=json')} download="memorias.json">Exportar JSON</a>
+        <a className="hud-btn" href={withToken('/api/memories/export?format=md')} download="memorias.md">Exportar Markdown</a>
       </div>
     </div>
   )

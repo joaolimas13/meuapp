@@ -60,6 +60,15 @@ export function playCue(cue: Cue) {
   }
 }
 
+/** Estado da fala do GAIA, lido pelo orbe (amplitude) e pelo microfone (pausa para não se ouvir). */
+export const speech = { speaking: false, level: 0 }
+const listeners = new Set<() => void>()
+export const onSpeechChange = (cb: () => void) => {
+  listeners.add(cb)
+  return () => void listeners.delete(cb)
+}
+const emit = () => listeners.forEach((f) => f())
+
 /** Fala em português do Brasil (Web Speech Synthesis). */
 export function speak(text: string) {
   if (!prefs.voice || !('speechSynthesis' in window)) return
@@ -68,8 +77,25 @@ export function speak(text: string) {
     const u = new SpeechSynthesisUtterance(text)
     u.lang = 'pt-BR'
     u.rate = 1
+    u.onstart = () => { speech.speaking = true; emit() }
+    // A cada palavra o "volume" do orbe dá um pulso (o navegador não expõe o áudio da voz sintética).
+    u.onboundary = () => { speech.level = 0.35 + Math.random() * 0.5 }
+    const stop = () => { speech.speaking = false; speech.level = 0; emit() }
+    u.onend = stop
+    u.onerror = stop
     window.speechSynthesis.speak(u)
   } catch {
     /* sem voz disponível */
   }
+}
+
+export function stopSpeaking() {
+  try {
+    window.speechSynthesis?.cancel()
+  } catch {
+    /* ignora */
+  }
+  speech.speaking = false
+  speech.level = 0
+  emit()
 }

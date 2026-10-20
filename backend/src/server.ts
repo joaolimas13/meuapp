@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import type { AIProvider } from './ai'
 import type { Config } from './config'
 import type { DB } from './db'
+import crypto from 'node:crypto'
 import { BadRequest } from './lib/validate'
 import { chatRoutes } from './routes/chat'
 import { devRoutes } from './routes/dev'
@@ -35,8 +36,24 @@ export function buildServer(deps: Deps): FastifyInstance {
     return reply.code(status).send({ error: status >= 500 ? 'Erro interno.' : err.message })
   })
 
+  // Senha opcional: com GAIA_TOKEN definido, toda a API (menos /api/health) exige o token,
+  // no cabeçalho "x-gaia-token" ou na URL (?token=, usado nos links de exportação).
+  if (deps.config.token) {
+    const want = Buffer.from(deps.config.token)
+    app.addHook('onRequest', async (req, reply) => {
+      if (!req.url.startsWith('/api/') || req.url.startsWith('/api/health')) return
+      const q = new URL(req.url, 'http://x').searchParams.get('token')
+      const got = Buffer.from(String(req.headers['x-gaia-token'] ?? q ?? ''))
+      // timingSafeEqual exige o mesmo tamanho; comparação em tempo constante evita adivinhar a senha.
+      if (got.length !== want.length || !crypto.timingSafeEqual(got, want)) {
+        return reply.code(401).send({ error: 'Acesso negado: informe o token do GAIA.' })
+      }
+    })
+  }
+
   app.get('/api/health', async () => ({
     ok: true,
+    auth: !!deps.config.token,
     ai: { provider: s.provider.name, model: s.provider.model, configured: s.provider.isConfigured() },
   }))
 

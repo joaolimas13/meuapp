@@ -2,7 +2,7 @@
 
 Painel de comando pessoal para ficar ligado em uma tela dedicada, inspirado no J.A.R.V.I.S. e no GAIA de Horizon Zero Dawn.
 
-**Status:** Fase 4 (lembretes escalonados com som e voz, Modo Foco, âncoras de rotina, "onde eu parei", plano e revisão do dia, escala 24/72). Voz de entrada (microfone) é a Fase 5.
+**Status:** Fase 5 (voz: microfone, palavra de ativação "Gaia", resposta falada, captura rápida pelo celular). Próxima: Fase 6 (Negócio 3D).
 
 ## Privacidade
 
@@ -113,3 +113,28 @@ Testes: `npm test` (backend) — 46 testes.
 **Limites conhecidos:** os alertas só tocam/falam com o painel aberto no navegador; sem reconhecimento de voz (microfone) até a Fase 5; as âncoras ainda não disparam sozinhas por horário (você abre o checklist quando o momento acontece).
 
 Testes: `npm test` (backend) — 55 testes.
+
+## Fase 5 — voz e captura pelo celular
+
+### Voz no painel (computador)
+- Tecla **`V`** (ou botão "Falar") liga o microfone. Passivo: só reage a frases que **começam com "Gaia"**. Dizer só "Gaia" abre ~9 s para o comando seguinte. Enquanto o GAIA fala, o mic pausa (senão ele ouve a própria voz).
+- Comandos: **"Gaia, anota …"** (cai na Caixa de entrada na hora, sem perguntas) · **"feito / adiar / cancelar"** (soltos, sem "Gaia", quando há um alerta na tela) · **"Gaia, onde eu parei?"** · **"Gaia, modo foco"** / "sair do foco" · **"Gaia, abrir tarefas / caixa / dia / memórias / evolução / rotina"** · "Gaia, fechar". Qualquer outra frase vai para o chat e a resposta é **falada**.
+- O orbe fica verde ao ouvir o comando e a amplitude do microfone/da voz move as barras do orbe (no Android o medidor do microfone fica desligado, para não disputar o mic).
+- **Navegador:** use o **Chrome ou Edge** (Firefox não tem reconhecimento de voz). Funciona em `localhost`/`127.0.0.1` ou HTTPS.
+- **Privacidade:** no Chrome o áudio do microfone vai para o serviço de reconhecimento do Google enquanto o mic está ligado. Desligue com `V` quando não quiser.
+
+### Captura pelo celular: `/captura`
+Página com um botão de microfone grande: toca, fala, **salva sozinha na Caixa de entrada**. No Chrome do Android: abra a página → menu ⋮ → **Adicionar à tela inicial**.
+
+Para o celular alcançar o GAIA fora de casa (recomendado: **Tailscale**, gratuito e privado):
+1. Instale o Tailscale no netbook e no celular, entrando com a mesma conta.
+2. No `backend/.env` defina **`GAIA_TOKEN`** com uma frase longa (mínimo 16 caracteres). Sem isso qualquer aparelho da sua rede privada leria seus dados.
+3. No netbook: `tailscale serve --bg 8787` (dá um endereço **HTTPS** tipo `https://netbook.xxxx.ts.net`; o Chrome só libera o microfone em HTTPS). Pode ser preciso ativar "HTTPS" e "MagicDNS" no painel do Tailscale.
+4. No celular abra `https://netbook.xxxx.ts.net/captura`, digite o token uma vez e adicione à tela inicial.
+O netbook precisa estar ligado e com internet.
+
+**Segurança:** com `GAIA_TOKEN` definido toda a API exige o token (cabeçalho `x-gaia-token`). Se você usar `HOST=0.0.0.0`, o GAIA **recusa subir sem token**. Com `tailscale serve` o servidor continua em `127.0.0.1`, então **sempre defina o token** nesse caso.
+
+**Não testado por mim:** Tailscale, o microfone real, as vozes do seu sistema e o Chrome do seu Android (testei com microfone e voz simulados e a página em um navegador de teste).
+
+Testes: `npm test` (backend) — 62 testes.

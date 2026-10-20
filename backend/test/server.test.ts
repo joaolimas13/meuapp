@@ -35,7 +35,7 @@ after(() => app.close())
 
 test('health informa o provedor de IA', async () => {
   const j = await (await fetch(`${base}/api/health`)).json()
-  assert.deepEqual(j, { ok: true, ai: { provider: 'mock', model: 'mock-1', configured: true } })
+  assert.deepEqual(j, { ok: true, auth: false, ai: { provider: 'mock', model: 'mock-1', configured: true } })
 })
 
 test('chat devolve deltas em streaming, termina com done e salva o histórico', async () => {

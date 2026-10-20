@@ -28,6 +28,8 @@ export interface Health {
   ai: { provider: string; model: string; configured: boolean }
 }
 
+import { authHeaders, UNAUTHORIZED_EVENT } from './auth'
+
 const OFFLINE_MSG = 'Não consegui falar com o backend do GAIA. Ele está rodando?'
 
 /** Chamada JSON genérica. Erros viram `Error` com a mensagem em português que o backend enviou. */
@@ -36,12 +38,13 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   try {
     res = await fetch(path, {
       method,
-      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+      headers: { ...authHeaders(), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
     throw new Error(OFFLINE_MSG)
   }
+  if (res.status === 401) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
   if (!res.ok) {
     let msg = `Erro ${res.status}`
     try {
@@ -144,7 +147,7 @@ export async function streamChat(message: string, h: StreamHandlers, signal?: Ab
   try {
     res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { ...authHeaders(), 'content-type': 'application/json' },
       body: JSON.stringify({ message }),
       signal,
     })
@@ -152,8 +155,9 @@ export async function streamChat(message: string, h: StreamHandlers, signal?: Ab
     if (!signal?.aborted) h.onError(OFFLINE_MSG)
     return
   }
+  if (res.status === 401) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
   if (!res.ok || !res.body) {
-    h.onError(res.status === 400 ? 'Mensagem inválida.' : OFFLINE_MSG)
+    h.onError(res.status === 401 ? 'Acesso negado: informe o token.' : res.status === 400 ? 'Mensagem inválida.' : OFFLINE_MSG)
     return
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type MutableRefObject } from 'react'
 import type { OrbState } from '../../../shared/types'
 
 /*
@@ -55,9 +55,11 @@ interface Props {
   lite: boolean
   /** Muda a cada "despertar" para disparar a onda de ativação. */
   wakeKey: number
+  /** Amplitude do áudio (0..1): microfone ao ouvir, voz do GAIA ao falar. Lida a cada quadro, sem re-render. */
+  levelRef?: MutableRefObject<number>
 }
 
-export function Orb({ state, night, dim, lite, wakeKey }: Props) {
+export function Orb({ state, night, dim, lite, wakeKey, levelRef }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const propsRef = useRef({ state, night, dim, lite })
   const wakeRef = useRef(-1) // segundos desde o despertar (-1 = sem animação)
@@ -202,7 +204,8 @@ export function Orb({ state, night, dim, lite, wakeKey }: Props) {
       ctx.restore()
 
       // --- Visualizador de voz: barras radiais ---
-      // Na Fase 5 a amplitude virá do áudio real; aqui é simulada com senoides.
+      // A amplitude real do áudio (levelRef) soma-se à animação base de cada estado.
+      const lv = levelRef?.current ?? 0
       const bars = lite_bars(p.lite)
       ctx.strokeStyle = rgba(0.85)
       ctx.lineWidth = 2
@@ -212,7 +215,7 @@ export function Orb({ state, night, dim, lite, wakeKey }: Props) {
         const a = (i / bars) * TAU + t * 0.1
         const wob = 0.5 + 0.5 * Math.sin(i * 0.35 + t * 6) * Math.sin(i * 0.13 - t * 3.1)
         const noise = 0.6 + 0.4 * Math.sin(t * 9 + i * 1.7)
-        const len = R * (0.03 + cur.wave * 0.22 * wob * noise)
+        const len = R * (0.03 + (cur.wave + lv * 1.1) * 0.22 * wob * noise)
         ctx.moveTo(Math.cos(a) * r0 + cx, Math.sin(a) * r0 + cy)
         ctx.lineTo(Math.cos(a) * (r0 + len) + cx, Math.sin(a) * (r0 + len) + cy)
       }

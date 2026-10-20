@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { OrbState } from '../../shared/types'
 import { BusinessPanel } from './components/BusinessPanel'
 import { ChatPanel } from './components/ChatPanel'
@@ -31,7 +31,10 @@ import { api } from './lib/api'
 import { useNightMode } from './hooks/useNightMode'
 import { CONFIG } from './lib/config'
 import { BUSINESS } from './lib/sampleData'
-import { playCue, unlockAudio } from './lib/sound'
+import { playCue, speak, unlockAudio } from './lib/sound'
+import { useVoice } from './hooks/useVoice'
+import { TokenGate } from './components/TokenGate'
+import type { VoiceCommand } from '../../shared/voiceCommands'
 
 // Teclas de teste do orbe. Com o chat aberto, o estado real (pensando/falando) tem prioridade.
 const TAB_KEYS: Record<string, TabId> = { c: 'chat', i: 'inbox', t: 'tasks', d: 'day', m: 'memories', e: 'growth', r: 'routine' }
@@ -79,10 +82,58 @@ export default function App() {
   }
   const ai = useAiStatus()
 
+  // ---- Voz: o que cada comando falado faz (a interpretação está em shared/voiceCommands.ts) ----
+  const voiceReply = useRef(false) // a próxima resposta do chat deve ser falada em voz alta
+  const topAlert = alerts.data?.alerts[0] ?? null
+  const onVoice = (cmd: VoiceCommand) => {
+    switch (cmd.type) {
+      case 'capture':
+        // Captura rápida: salva na hora, sem perguntar nada.
+        api.addInbox(cmd.text).then(() => { bump(); playCue('confirm'); speak('Anotado.') }).catch(() => speak('Não consegui anotar agora.'))
+        break
+      case 'alert':
+        if (!topAlert) return speak('Não há nenhum alerta agora.')
+        if (cmd.action === 'done') { complete(topAlert.taskId); speak('Feito.') }
+        else if (cmd.action === 'snooze') { mutate(() => api.snooze(topAlert.taskId, 10)); speak('Adiado por dez minutos.') }
+        else { mutate(() => api.updateTask(topAlert.taskId, { status: 'cancelled' })); speak('Cancelado.') }
+        break
+      case 'where':
+        api.bridge().then(({ bridge: b }) =>
+          speak(b ? `Você estava fazendo ${b.title}.${b.nextStep ? ` O próximo passo era: ${b.nextStep}.` : ''}` : 'Não tenho nenhum ponto de retomada guardado.'),
+        ).catch(() => speak('Não consegui consultar agora.'))
+        break
+      case 'focus':
+        if (cmd.on) openFocus(today.data?.priorities[0]?.id ?? null)
+        else setFocusOpen(false)
+        break
+      case 'open': setTab(cmd.tab); break
+      case 'close': setTab(null); setFocusOpen(false); break
+      case 'chat':
+        voiceReply.current = true
+        setTab('chat')
+        chat.send(cmd.text)
+        break
+      case 'wake': break
+    }
+  }
+  const voice = useVoice({ bare: !!topAlert, onCommand: onVoice })
+
+  // Depois de uma pergunta falada, o GAIA responde falando (curto, sem marcações de formatação).
+  const prevStatus = useRef(chat.status)
+  useEffect(() => {
+    if (prevStatus.current !== 'idle' && chat.status === 'idle' && voiceReply.current) {
+      voiceReply.current = false
+      const last = [...chat.messages].reverse().find((m) => m.role === 'assistant')
+      if (chat.error) speak('Não consegui falar com a IA agora.')
+      else if (last?.content) speak(last.content.replace(/[*_`#>]/g, '').slice(0, 500))
+    }
+    prevStatus.current = chat.status
+  }, [chat.status, chat.messages, chat.error])
+
   const hotAlert = (alerts.data?.alerts ?? []).some((a) => a.level >= 1)
   // O orbe reflete o chat: esperando resposta = pensando; resposta chegando = falando.
   const orbState: OrbState =
-    chat.status === 'thinking' ? 'thinking' : chat.status === 'streaming' ? 'speaking' : hotAlert ? 'alert' : manualOrb
+    chat.status === 'thinking' ? 'thinking' : chat.status === 'streaming' ? 'speaking' : hotAlert ? 'alert' : voice.mode === 'active' ? 'listening' : manualOrb
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -95,6 +146,7 @@ export default function App() {
       else if (k === 'l') setLite((v) => !v)
       else if (k === 'a') sleep()
       else if (k === 'f') setFocusOpen((v) => !v)
+      else if (k === 'v') voice.toggle()
       else if (k in TAB_KEYS) {
         e.preventDefault() // evita que a letra apareça já dentro do campo de texto
         setTab((cur) => (cur === TAB_KEYS[k] ? null : TAB_KEYS[k]))
@@ -102,7 +154,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [night, sleep])
+  }, [night, sleep, voice.toggle])
 
   // Foco em andamento (ex.: ao reabrir a página): volta para a tela de foco.
   const hadFocus = !!focusNow.data?.session
@@ -142,6 +194,11 @@ export default function App() {
           G·A·I·A
         </span>
         <div className="flex items-center gap-4">
+          {voice.supported && (
+            <button type="button" onClick={voice.talk} className="hud-title border px-3 py-1" style={{ borderColor: voice.mode === 'off' ? 'var(--line)' : 'var(--cyan)', fontSize: '0.65rem' }} aria-label="Falar com o GAIA">
+              {voice.mode === 'active' ? 'Ouvindo…' : 'Falar [V]'}
+            </button>
+          )}
           <button type="button" onClick={() => openFocus(today.data?.priorities[0]?.id ?? null)} className="hud-title border px-3 py-1" style={{ borderColor: 'var(--line)', fontSize: '0.65rem' }}>
             Foco [F]
           </button>
@@ -154,7 +211,7 @@ export default function App() {
             Painel [C·I·T·D·M·E·R]{inbox.data && inbox.data.length > 0 ? ` · ${inbox.data.length}` : ''}
           </button>
           <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
-            v0.4 · FASE 4
+            v0.5 · FASE 5
           </span>
         </div>
       </header>
@@ -170,7 +227,7 @@ export default function App() {
         {/* Centro: orbe + relógio + próximo compromisso (sempre visíveis) */}
         <div className="order-1 flex min-h-0 flex-col items-center justify-center gap-5 lg:order-2">
           <div className="aspect-square w-full max-w-[min(34rem,52vh)]">
-            <Orb state={orbState} night={night.night} dim={ambient ? 0 : 1} lite={lite} wakeKey={wakeKey} />
+            <Orb state={orbState} night={night.night} dim={ambient ? 0 : 1} lite={lite} wakeKey={wakeKey} levelRef={voice.levelRef} />
           </div>
           <Clock ambient={ambient} />
           <NextEventBar event={today.data?.nextEvent ?? null} />
@@ -197,6 +254,13 @@ export default function App() {
           <BusinessPanel data={BUSINESS} delay={0.5} />
         </motion.div>
       </main>
+
+      <TokenGate />
+      {voice.heard && voice.mode !== 'off' && (
+        <div className="mono pointer-events-none fixed bottom-16 left-1/2 z-30 -translate-x-1/2 text-sm" style={{ color: 'var(--text-dim)' }} aria-live="polite">
+          “{voice.heard}”
+        </div>
+      )}
 
       <AnimatePresence>
         {(alerts.data?.alerts.length ?? 0) > 0 && !focusOpen && (
@@ -236,6 +300,7 @@ export default function App() {
           nightLabel={night.override}
           lite={lite}
           hideHints={ambient}
+          mic={voice.supported ? (voice.error ? { label: 'MIC: ' + voice.error, ok: false } : voice.mode === 'off' ? { label: 'MIC DESLIGADO [V]', ok: false } : voice.mode === 'active' ? { label: 'OUVINDO O COMANDO…', ok: true } : { label: 'MIC: DIGA "GAIA"', ok: true }) : { label: 'MIC INDISPONÍVEL NESTE NAVEGADOR', ok: false }}
         />
       </div>
     </div>
