@@ -1,0 +1,298 @@
+import { MEMORY_CATEGORIES } from '../../../shared/types'
+import type { ToolDef } from '../ai/types'
+import { nextStep } from '../db/tasksRepo'
+import { norm } from '../lib/time'
+import {
+  asObj,
+  BadRequest,
+  optBool,
+  optDue,
+  optEnum,
+  optNum,
+  optStr,
+  reqStr,
+  steps,
+  type Obj,
+} from '../lib/validate'
+import { describeTask } from '../planner'
+import type { Services } from '../services'
+
+/*
+  FERRAMENTAS DO GAIA
+  -------------------
+  Aqui está o que o GAIA consegue FAZER pela conversa. Cada ferramenta tem:
+   - uma descrição (o que a IA lê para decidir quando usar);
+   - um executor (o que realmente acontece no banco).
+  `action` é o que aparece na tela como confirmação ("✔ Tarefa criada").
+  Se algo estiver errado nos argumentos, devolvemos { error } para a IA corrigir ou explicar.
+*/
+
+export interface ToolOutcome {
+  response: unknown
+  action?: { ok: boolean; text: string }
+}
+
+const STEPS_SCHEMA = {
+  type: 'array',
+  description: 'Passos pequenos e concretos (5 a 15 min cada), do mais fácil para o mais difícil.',
+  items: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'O que fazer neste passo.' },
+      minutes: { type: 'integer', description: 'Minutos estimados (5 a 15).' },
+    },
+    required: ['title'],
+  },
+}
+
+const DUE_DESC =
+  'Prazo no horário local: "AAAA-MM-DD" (só o dia) ou "AAAA-MM-DDTHH:MM". Omita se a pessoa não deu prazo.'
+
+export const TOOL_DEFS: ToolDef[] = [
+  {
+    name: 'create_task',
+    description:
+      'Cria uma tarefa (ou lembrete com horário) na lista. Para tarefa grande ou vaga, envie também "steps" já quebrada em passos.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Título curto da tarefa.' },
+        due_at: { type: 'string', description: DUE_DESC },
+        priority: { type: 'string', enum: ['high', 'normal', 'low'] },
+        insistence: {
+          type: 'string',
+          enum: ['low', 'medium', 'max'],
+          description: 'Quão insistente deve ser o lembrete (remédio = max; ideia solta = low).',
+        },
+        category: { type: 'string' },
+        description: { type: 'string' },
+        steps: STEPS_SCHEMA,
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'list_tasks',
+    description: 'Lista as tarefas (com id) para consultar a agenda ou achar o id de uma tarefa.',
+    parameters: {
+      type: 'object',
+      properties: { status: { type: 'string', enum: ['todo', 'done'], description: 'Padrão: todo (em aberto).' } },
+    },
+  },
+  {
+    name: 'complete_task',
+    description: 'Marca uma tarefa (ou um passo) como concluída. Use o id; se não souber, passe parte do título.',
+    parameters: {
+      type: 'object',
+      properties: { id: { type: 'integer' }, title: { type: 'string', description: 'Parte do título, se não tiver o id.' } },
+    },
+  },
+  {
+    name: 'add_task_steps',
+    description: 'Quebra uma tarefa que já existe em passos pequenos, acrescentando os passos a ela.',
+    parameters: {
+      type: 'object',
+      properties: { task_id: { type: 'integer' }, steps: STEPS_SCHEMA },
+      required: ['task_id', 'steps'],
+    },
+  },
+  {
+    name: 'save_memory',
+    description:
+      'Guarda um fato duradouro sobre a pessoa ou o mundo dela (pessoas, preferências, projetos, rotina...) quando ela pede "lembra que...", "guarda isso".',
+    parameters: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'O fato, em uma frase clara e autocontida.' },
+        category: { type: 'string', enum: [...MEMORY_CATEGORIES] },
+        tags: { type: 'array', items: { type: 'string' } },
+        importance: { type: 'integer', description: '1 a 5. Use 5 só para o que deve estar SEMPRE presente.' },
+      },
+      required: ['text'],
+    },
+  },
+  {
+    name: 'search_memories',
+    description: 'Procura nas memórias guardadas quando a pergunta depende de algo que a pessoa já contou.',
+    parameters: {
+      type: 'object',
+      properties: { query: { type: 'string' }, category: { type: 'string', enum: [...MEMORY_CATEGORIES] } },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'capture_inbox',
+    description:
+      'Captura rápida: salva uma anotação solta na Caixa de Entrada, sem perguntar nada. Use quando a pessoa disser "anota...", "anota aí..." sem prazo nem categoria.',
+    parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+  },
+  {
+    name: 'log_day',
+    description:
+      'Registra no diário de desenvolvimento pessoal do dia: sono, páginas lidas, água, exercício, estudo. Envie só o que a pessoa informou.',
+    parameters: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'AAAA-MM-DD. Padrão: hoje.' },
+        sleep_hours: { type: 'number', description: 'Horas dormidas.' },
+        pages: { type: 'integer', description: 'Páginas lidas hoje (total do dia, não só o que falta).' },
+        water_liters: { type: 'number', description: 'Total de água bebida hoje, em litros.' },
+        exercised: { type: 'boolean' },
+        exercise_note: { type: 'string', description: 'Qual atividade (ex.: corrida 5 km).' },
+        studied: { type: 'boolean' },
+        study_hours: { type: 'number' },
+      },
+    },
+  },
+  {
+    name: 'add_goal',
+    description: 'Cria uma meta: "fixed" repete todos os dias; "daily" vale só para um dia.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        kind: { type: 'string', enum: ['fixed', 'daily'] },
+        date: { type: 'string', description: 'Para metas diárias: AAAA-MM-DD. Padrão: hoje.' },
+      },
+      required: ['title', 'kind'],
+    },
+  },
+]
+
+const fail = (text: string, error = text): ToolOutcome => ({ response: { error }, action: { ok: false, text } })
+
+/** Executa uma ferramenta pedida pela IA. Nunca lança: erros viram resposta para a IA. */
+export function runTool(name: string, rawArgs: unknown, s: Services): ToolOutcome {
+  try {
+    return execute(name, asObj(rawArgs), s)
+  } catch (err) {
+    if (err instanceof BadRequest) return fail(`Não consegui: ${err.message}`, err.message)
+    console.error(`Erro na ferramenta ${name}:`, err instanceof Error ? err.message : err)
+    return fail('Algo deu errado ao executar a ação.')
+  }
+}
+
+function execute(name: string, a: Obj, s: Services): ToolOutcome {
+  const now = s.local()
+  switch (name) {
+    case 'create_task': {
+      const task = s.tasks.createWithSteps(
+        {
+          title: reqStr(a, 'title', 200),
+          description: optStr(a, 'description', 2000),
+          dueAt: optDue(a, 'due_at'),
+          priority: optEnum(a, 'priority', ['high', 'normal', 'low'] as const),
+          insistence: optEnum(a, 'insistence', ['low', 'medium', 'max'] as const),
+          category: optStr(a, 'category', 60),
+        },
+        steps(a),
+      )
+      const n = task.steps.length
+      return {
+        response: { ok: true, id: task.id, title: task.title, due_at: task.dueAt, steps: n },
+        action: { ok: true, text: `Tarefa criada: ${task.title}${n ? ` (${n} passos)` : ''}` },
+      }
+    }
+
+    case 'list_tasks': {
+      const status = optEnum(a, 'status', ['todo', 'done'] as const) ?? 'todo'
+      const list = s.tasks.list({ status, limit: 25 })
+      return { response: { tasks: list.map((t) => describeTask(t, now)), count: list.length } }
+    }
+
+    case 'complete_task': {
+      let id = optNum(a, 'id', 1, Number.MAX_SAFE_INTEGER)
+      if (id === undefined) {
+        const q = norm(reqStr(a, 'title'))
+        const open = s.tasks.list({ status: 'todo' })
+        const pool = open.flatMap((t) => [t, ...t.steps.filter((x) => x.status === 'todo')])
+        const matches = pool.filter((t) => norm(t.title).includes(q))
+        if (matches.length === 0) return fail('Não achei essa tarefa em aberto.')
+        if (matches.length > 1) {
+          return {
+            response: { error: 'Mais de uma tarefa combina. Pergunte qual.', candidates: matches.map((t) => describeTask(t, now)) },
+            action: { ok: false, text: 'Mais de uma tarefa combina; preciso saber qual.' },
+          }
+        }
+        id = matches[0].id
+      }
+      const r = s.tasks.complete(id)
+      if (!r) return fail('Tarefa não encontrada.')
+      const closed = r.parentDone ? ` (e a tarefa "${r.parentDone.title}" foi concluída)` : ''
+      return {
+        response: { ok: true, title: r.task.title, parent_done: r.parentDone?.title ?? null },
+        action: { ok: true, text: `Concluída: ${r.task.title}${closed}` },
+      }
+    }
+
+    case 'add_task_steps': {
+      const id = optNum(a, 'task_id', 1, Number.MAX_SAFE_INTEGER)
+      const list = steps(a)
+      if (id === undefined || !list?.length) throw new BadRequest('Informe task_id e ao menos um passo.')
+      if (!s.tasks.get(id)) return fail('Tarefa não encontrada.')
+      s.tasks.addSteps(id, list)
+      const t = s.tasks.get(id)!
+      return {
+        response: { ok: true, next_step: nextStep(t)?.title ?? null },
+        action: { ok: true, text: `${list.length} passos adicionados a "${t.title}"` },
+      }
+    }
+
+    case 'save_memory': {
+      const m = s.memories.add({
+        text: reqStr(a, 'text', 2000),
+        category: optEnum(a, 'category', MEMORY_CATEGORIES),
+        tags: Array.isArray(a.tags) ? a.tags.filter((t): t is string => typeof t === 'string').slice(0, 10) : [],
+        importance: optNum(a, 'importance', 1, 5),
+      })
+      return { response: { ok: true, id: m.id }, action: { ok: true, text: 'Memória salva' } }
+    }
+
+    case 'search_memories': {
+      const found = s.memories.search(reqStr(a, 'query', 200), { category: optEnum(a, 'category', MEMORY_CATEGORIES), limit: 8 })
+      return { response: { memories: found.map((m) => ({ category: m.category, text: m.text })) } }
+    }
+
+    case 'capture_inbox': {
+      s.inbox.add(reqStr(a, 'text', 1000))
+      return { response: { ok: true }, action: { ok: true, text: 'Anotado na Caixa de Entrada' } }
+    }
+
+    case 'log_day': {
+      const date = optStr(a, 'date', 10) ?? now.date
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequest('"date" inválida: use AAAA-MM-DD.')
+      const patch = {
+        sleepHours: optNum(a, 'sleep_hours', 0, 24),
+        pages: optNum(a, 'pages', 0, 5000),
+        waterL: optNum(a, 'water_liters', 0, 20),
+        exercised: optBool(a, 'exercised'),
+        exerciseNote: optStr(a, 'exercise_note', 200),
+        studied: optBool(a, 'studied'),
+        studyHours: optNum(a, 'study_hours', 0, 24),
+      }
+      const given = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined))
+      if (Object.keys(given).length === 0) throw new BadRequest('Nenhum dado para registrar.')
+      s.dev.repo.saveLog(date, given)
+      const score = s.dev.scoreFor(date).total
+      return {
+        response: { ok: true, date, score_so_far: score },
+        action: { ok: true, text: `Registro do dia atualizado (nota ${score})` },
+      }
+    }
+
+    case 'add_goal': {
+      const kind = optEnum(a, 'kind', ['fixed', 'daily'] as const)
+      if (!kind) throw new BadRequest('"kind" deve ser fixed ou daily.')
+      const date = optStr(a, 'date', 10) ?? now.date
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequest('"date" inválida: use AAAA-MM-DD.')
+      const g = s.dev.repo.addGoal({ title: reqStr(a, 'title', 120), kind, date, createdOn: date })
+      return {
+        response: { ok: true, id: g.id },
+        action: { ok: true, text: `Meta ${kind === 'fixed' ? 'fixa' : 'do dia'} criada: ${g.title}` },
+      }
+    }
+
+    default:
+      return fail(`Ferramenta desconhecida: ${name}`)
+  }
+}
