@@ -16,6 +16,8 @@ import {
 } from '../lib/validate'
 import { describeTask } from '../planner'
 import { dailyReview, planDay } from '../schedule'
+import { checkinSummary, weeklyReview } from '../wellbeing'
+import { addDays } from '../lib/time'
 import type { Services } from '../services'
 
 /*
@@ -213,6 +215,45 @@ export const TOOL_DEFS: ToolDef[] = [
     description: 'Resumo do dia: o que foi feito, o que ficou para remarcar e o que olhar amanhã.',
     parameters: { type: 'object', properties: {} },
   },
+  {
+    name: 'add_study_cards',
+    description: 'Cria cartões de revisão espaçada (pergunta e resposta curtas) sobre o que a pessoa estudou, para o GAIA perguntar nos dias seguintes.',
+    parameters: {
+      type: 'object',
+      properties: {
+        topic: { type: 'string', description: 'Assunto (ex.: "Hidráulica").' },
+        cards: { type: 'array', description: 'Cartões de pergunta e resposta.', items: { type: 'object', properties: { question: { type: 'string' }, answer: { type: 'string' } }, required: ['question', 'answer'] } },
+      },
+      required: ['cards'],
+    },
+  },
+  {
+    name: 'save_vault_idea',
+    description: 'Guarda uma ideia ou projeto futuro no cofre (para revisar com calma depois), sem virar tarefa agora.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        notes: { type: 'string', description: 'Detalhes (opcional).' },
+        kind: { type: 'string', enum: ['ideia', 'projeto'] },
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'log_checkin',
+    description: 'Registra como a pessoa está agora: energia e humor de 1 (baixo) a 5 (alto).',
+    parameters: {
+      type: 'object',
+      properties: { energy: { type: 'number' }, mood: { type: 'number' }, note: { type: 'string' } },
+      required: ['energy', 'mood'],
+    },
+  },
+  {
+    name: 'weekly_review',
+    description: 'Revisão da semana (últimos 7 dias): o que foi concluído, o que remarcar e o que priorizar na próxima.',
+    parameters: { type: 'object', properties: {} },
+  },
 ]
 
 const fail = (text: string, error = text): ToolOutcome => ({ response: { error }, action: { ok: false, text } })
@@ -387,6 +428,31 @@ function execute(name: string, a: Obj, s: Services): ToolOutcome {
       const doneToday = s.tasks.list({ status: 'done' }).filter((t) => t.parentId === null && t.completedAt && localNow(s.config.timezone, new Date(t.completedAt)).date === now.date)
       return { response: dailyReview(s.tasks.list({ status: 'todo' }), doneToday, now, s.dev.scoreFor(now.date).total) }
     }
+
+    case 'add_study_cards': {
+      const cards = Array.isArray(a.cards) ? a.cards.slice(0, 20) : []
+      if (!cards.length) throw new BadRequest('Informe pelo menos um cartão.')
+      const topic = optStr(a, 'topic', 80) ?? ''
+      for (const c of cards) {
+        const o = asObj(c)
+        s.wellbeing.addCard({ topic, question: reqStr(o, 'question', 400), answer: reqStr(o, 'answer', 600) }, now.date)
+      }
+      return { response: { ok: true, created: cards.length }, action: { ok: true, text: `${cards.length} cartão(ões) de revisão criado(s)` } }
+    }
+    case 'save_vault_idea': {
+      const item = s.wellbeing.addVault({ title: reqStr(a, 'title', 200), notes: optStr(a, 'notes', 1000) ?? '', kind: optEnum(a, 'kind', ['ideia', 'projeto'] as const) ?? 'ideia' })
+      return { response: { ok: true, id: item.id }, action: { ok: true, text: `Guardado no cofre: ${item.title}` } }
+    }
+    case 'log_checkin': {
+      const energy = optNum(a, 'energy', 1, 5)
+      const mood = optNum(a, 'mood', 1, 5)
+      if (!Number.isInteger(energy) || !Number.isInteger(mood)) throw new BadRequest('Energia e humor devem ser números de 1 a 5.')
+      s.wellbeing.addCheckin({ date: now.date, time: now.time, energy: energy!, mood: mood!, note: optStr(a, 'note', 200) ?? '' })
+      const sum = checkinSummary(s.wellbeing.checkinsBetween(addDays(now.date, -60), now.date), now)
+      return { response: { ok: true, suggestion: sum.suggestion }, action: { ok: true, text: 'Check-in registrado' } }
+    }
+    case 'weekly_review':
+      return { response: weeklyReview(s) }
 
     default:
       return fail(`Ferramenta desconhecida: ${name}`)

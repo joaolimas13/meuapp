@@ -7,6 +7,8 @@ import { ErrorLine } from './ErrorLine'
 export function DayTab({ version, onChanged }: { version: number; onChanged: () => void }) {
   const plan = useLoad(api.plan, [version])
   const review = useLoad(api.review, [version])
+  const weekly = useLoad(api.weeklyReview, [version])
+  const w = weekly.data
   const p = plan.data
   const r = review.data
   const hm = (s: string) => s.slice(11, 16)
@@ -45,6 +47,25 @@ export function DayTab({ version, onChanged }: { version: number; onChanged: () 
               <div>
                 <div className="hud-title">Sugestão para amanhã</div>
                 <ul className="list-disc pl-5">{r.tomorrow.map((t) => <li key={t}>{t}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section data-testid="weekly-review">
+        <h3 className="hud-title mb-1">Revisão da semana{w ? ` · ${longDate(w.from).replace(/^[^,]+, /, '')} a ${longDate(w.to).replace(/^[^,]+, /, '')}` : ''}</h3>
+        {w && (
+          <div className="space-y-2">
+            <ul className="list-disc pl-5">{w.highlights.map((h) => <li key={h}>{h}</li>)}</ul>
+            <div className="mono text-sm" style={{ color: 'var(--text-dim)' }}>
+              {w.tasksDone} tarefa(s) concluída(s) · {w.goodDays} bom(ns) dia(s) · {w.pages} págs. · estudo {w.studyHours} h · rotina completa em {w.routineDays} dia(s)
+            </div>
+            {w.toReschedule > 0 && <div style={{ color: 'var(--amber)' }}>{w.toReschedule} tarefa(s) para remarcar com calma.</div>}
+            {w.nextWeek.length > 0 && (
+              <div>
+                <div className="hud-title">Para a próxima semana</div>
+                <ul className="list-disc pl-5">{w.nextWeek.map((t) => <li key={t}>{t}</li>)}</ul>
               </div>
             )}
           </div>

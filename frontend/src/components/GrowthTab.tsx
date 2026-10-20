@@ -11,6 +11,8 @@ const PART_LABELS: Record<string, string> = { goals: 'Metas', sleep: 'Sono', exe
 export function GrowthTab({ version, today, onChanged }: { version: number; today: string; onChanged: () => void }) {
   const [date, setDate] = useState(today)
   const { data: day, error, set } = useLoad(() => api.devDay(date), [date, version])
+  const well = useLoad(api.wellbeing, [version])
+  const energy = useLoad(api.checkinSummary, [version])
   const [goal, setGoal] = useState('')
   const [kind, setKind] = useState<'fixed' | 'daily'>('daily')
   const [err, setErr] = useState<string | null>(null)
@@ -95,11 +97,32 @@ export function GrowthTab({ version, today, onChanged }: { version: number; toda
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
           <div className="h-full" style={{ width: `${(stats.xpInLevel / stats.xpPerLevel) * 100}%`, background: 'var(--cyan)' }} />
         </div>
+        {well.data && (
+          <div className="mono mt-2 text-sm" style={{ color: 'var(--text-dim)' }} data-testid="wellbeing-stats">
+            Rotina completa: <span style={{ color: 'var(--text)' }}>{well.data.routineStreak} dia(s) seguidos</span> · {well.data.routineDays7}/7 na semana<br />
+            Tarefas concluídas: {well.data.tasksDoneToday} hoje · {well.data.tasksDoneWeek} na semana · {well.data.pointsToday} pontos hoje
+          </div>
+        )}
         <div className="mt-3 flex h-12 items-end gap-1" aria-label="Últimos 7 dias">
           {stats.last7.map((d) => (
             <div key={d.date} title={`${d.date}: ${d.score}`} className="flex-1" style={{ height: `${Math.max(4, d.score)}%`, background: d.score >= stats.goodDayThreshold ? 'var(--cyan)' : 'var(--line)' }} />
           ))}
         </div>
+      </section>
+
+      <section data-testid="energy-section">
+        <h3 className="hud-title mb-1">Energia ao longo do dia</h3>
+        {energy.data && energy.data.blocks.length > 0 && (
+          <div className="mb-2 flex h-14 items-end gap-1">
+            {energy.data.blocks.map((b) => (
+              <div key={b.label} className="flex flex-1 flex-col items-center" title={`${b.label}: ${b.avgEnergy} (${b.n})`}>
+                <div className="w-full" style={{ height: `${(b.avgEnergy / 5) * 100}%`, background: energy.data!.best?.label === b.label ? 'var(--amber)' : 'var(--cyan)' }} />
+                <span className="mono" style={{ fontSize: '0.6rem', color: 'var(--text-dim)' }}>{b.label.split('–')[0]}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-sm" style={{ color: 'var(--text-dim)' }}>{energy.data?.suggestion}</p>
       </section>
     </div>
   )

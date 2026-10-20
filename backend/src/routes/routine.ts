@@ -5,12 +5,14 @@ import { addMinutes, nowDt, localNow } from '../lib/time'
 import { asObj, BadRequest, optBool, optDate, optEnum, optNum, optStr, parseId, reqStr } from '../lib/validate'
 import { computeAlerts, isQuiet } from '../reminders'
 import { dailyReview, planDay } from '../schedule'
+import { ensureDaily } from '../wellbeing'
 import type { Services } from '../services'
 
 /** Rotas da Fase 4: alertas, soneca, foco, "onde eu parei", âncoras, plano do dia, revisão e configurações. */
 export function routineRoutes(app: FastifyInstance, s: Services) {
   // ---------------------------------------------------------------- alertas
   app.get('/api/alerts', async () => {
+    ensureDaily(s)
     const now = s.local()
     const g = s.settings.general()
     return { alerts: computeAlerts(s.tasks.list({ status: 'todo' }), now, g, s.focus.snoozes()), quiet: isQuiet(now, g), now: nowDt(now) }

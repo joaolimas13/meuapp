@@ -158,6 +158,52 @@ const MIGRATIONS: string[] = [
      created_at TEXT NOT NULL DEFAULT (${NOW})
    );
    CREATE INDEX idx_content_date ON content_posts(date);`,
+
+  // v5 — Fase 7: check-ins, estudos (revisão espaçada), plano de treino, cofre de ideias
+  `CREATE TABLE checkins (
+     id         INTEGER PRIMARY KEY AUTOINCREMENT,
+     date       TEXT NOT NULL,
+     time       TEXT NOT NULL,
+     energy     INTEGER NOT NULL CHECK (energy BETWEEN 1 AND 5),
+     mood       INTEGER NOT NULL CHECK (mood BETWEEN 1 AND 5),
+     note       TEXT NOT NULL DEFAULT '',
+     created_at TEXT NOT NULL DEFAULT (${NOW})
+   );
+   CREATE INDEX idx_checkins_date ON checkins(date);
+
+   CREATE TABLE study_cards (
+     id          INTEGER PRIMARY KEY AUTOINCREMENT,
+     topic       TEXT NOT NULL DEFAULT '',
+     question    TEXT NOT NULL,
+     answer      TEXT NOT NULL,
+     box         INTEGER NOT NULL DEFAULT 0,
+     next_review TEXT NOT NULL,
+     created_at  TEXT NOT NULL DEFAULT (${NOW})
+   );
+   CREATE INDEX idx_cards_next ON study_cards(next_review);
+
+   CREATE TABLE training_plan (
+     id      INTEGER PRIMARY KEY AUTOINCREMENT,
+     weekday INTEGER NOT NULL CHECK (weekday BETWEEN 0 AND 6),
+     title   TEXT NOT NULL,
+     time    TEXT NOT NULL DEFAULT '18:00'
+   );
+
+   CREATE TABLE vault_items (
+     id         INTEGER PRIMARY KEY AUTOINCREMENT,
+     title      TEXT NOT NULL,
+     notes      TEXT NOT NULL DEFAULT '',
+     kind       TEXT NOT NULL DEFAULT 'ideia' CHECK (kind IN ('ideia','projeto')),
+     status     TEXT NOT NULL DEFAULT 'guardada' CHECK (status IN ('guardada','executar','adiada','descartada')),
+     created_at TEXT NOT NULL DEFAULT (${NOW})
+   );
+
+   -- Tarefas geradas automaticamente (treino do dia, desacelerar, revisão semanal...): 1 vez por chave/dia.
+   CREATE TABLE generated_tasks (
+     key  TEXT NOT NULL,
+     date TEXT NOT NULL,
+     PRIMARY KEY (key, date)
+   );`,
 ]
 
 function migrate(db: DB) {

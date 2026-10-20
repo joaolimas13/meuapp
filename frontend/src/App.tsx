@@ -13,6 +13,9 @@ import { FocusMode } from './components/FocusMode'
 import { ResumeCard } from './components/ResumeCard'
 import { RoutineTab } from './components/RoutineTab'
 import { GrowthCard } from './components/GrowthCard'
+import { StudyTab } from './components/StudyTab'
+import { VaultTab } from './components/VaultTab'
+import { WellbeingCard } from './components/WellbeingCard'
 import { GrowthTab } from './components/GrowthTab'
 import { InboxTab } from './components/InboxTab'
 import { MemoriesTab } from './components/MemoriesTab'
@@ -39,7 +42,7 @@ import { TokenGate } from './components/TokenGate'
 import type { VoiceCommand } from '../../shared/voiceCommands'
 
 // Teclas de teste do orbe. Com o chat aberto, o estado real (pensando/falando) tem prioridade.
-const TAB_KEYS: Record<string, TabId> = { c: 'chat', i: 'inbox', t: 'tasks', d: 'day', p: 'orders', k: 'content', m: 'memories', e: 'growth', r: 'routine' }
+const TAB_KEYS: Record<string, TabId> = { c: 'chat', i: 'inbox', t: 'tasks', d: 'day', p: 'orders', k: 'content', m: 'memories', e: 'growth', r: 'routine', u: 'study', g: 'vault' }
 
 const STATE_KEYS: Record<string, OrbState> = {
   '1': 'idle',
@@ -62,7 +65,8 @@ export default function App() {
   const [version, setVersion] = useState(0) // sobe quando algo muda (recarrega os painéis)
   const bump = useCallback(() => setVersion((v) => v + 1), [])
   const { ambient, wakeKey, sleep } = useAmbient(CONFIG.ambientAfterSec * 1000)
-  const night = useNightMode()
+  const generalSettings = useLoad(api.settings, [version])
+  const night = useNightMode(generalSettings.data?.sleep.enabled ? generalSettings.data.sleep.windDown : null)
   const chat = useChat(bump)
   const alerts = useAlerts(version)
   const bridge = useLoad(api.bridge, [version])
@@ -211,10 +215,10 @@ export default function App() {
             className="hud-title border px-3 py-1"
             style={{ borderColor: tab ? 'var(--cyan)' : 'var(--line)', fontSize: '0.65rem' }}
           >
-            Painel [C·I·T·D·P·K·M·E·R]{inbox.data && inbox.data.length > 0 ? ` · ${inbox.data.length}` : ''}
+            Painel [C·I·T·D·P·K·U·G·M·E·R]{inbox.data && inbox.data.length > 0 ? ` · ${inbox.data.length}` : ''}
           </button>
           <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
-            v0.6 · FASE 6
+            v0.7 · FASE 7
           </span>
         </div>
       </header>
@@ -225,6 +229,7 @@ export default function App() {
           <Greeting priorities={today.data?.priorities.length ?? 0} nextTime={today.data?.nextEvent?.dueAt && today.data.nextEvent.dueAt.length > 10 ? today.data.nextEvent.dueAt.slice(11, 16) : null} />
           <MyDayPanel items={today.data?.priorities ?? []} onComplete={complete} onFocus={openFocus} delay={0.2} />
           <GrowthCard day={growth.data} onOpen={() => setTab('growth')} delay={0.3} />
+          <WellbeingCard version={version} onChanged={bump} onOpenStudy={() => setTab('study')} delay={0.4} />
         </motion.div>
 
         {/* Centro: orbe + relógio + próximo compromisso (sempre visíveis) */}
@@ -293,6 +298,8 @@ export default function App() {
             {tab === 'routine' && <RoutineTab onChanged={bump} />}
             {tab === 'orders' && <PedidosTab version={version} today={todayStr} onChanged={bump} />}
             {tab === 'content' && <ContentTab version={version} today={todayStr} onChanged={bump} />}
+            {tab === 'study' && <StudyTab version={version} onChanged={bump} />}
+            {tab === 'vault' && <VaultTab version={version} onChanged={bump} />}
             {tab === 'memories' && <MemoriesTab version={version} />}
             {tab === 'growth' && <GrowthTab version={version} today={todayStr} onChanged={bump} />}
           </Drawer>

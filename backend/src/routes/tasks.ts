@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { buildToday } from '../planner'
 import { asObj, optDue, optEnum, optNum, optStr, parseId, reqStr, steps } from '../lib/validate'
+import { ensureDaily } from '../wellbeing'
 import type { Services } from '../services'
 
 const PRIORITIES = ['high', 'normal', 'low'] as const
@@ -9,7 +10,10 @@ const STATUSES = ['todo', 'done', 'cancelled'] as const
 
 export function taskRoutes(app: FastifyInstance, s: Services) {
   // Tudo o que a tela principal precisa sobre hoje, numa chamada só.
-  app.get('/api/today', async () => buildToday(s.tasks.list({ status: 'todo' }), s.local()))
+  app.get('/api/today', async () => {
+    ensureDaily(s) // cria as tarefas automáticas do dia (treino, desacelerar...) na primeira consulta
+    return buildToday(s.tasks.list({ status: 'todo' }), s.local())
+  })
 
   app.get('/api/tasks', async (req) => {
     const q = asObj(req.query)

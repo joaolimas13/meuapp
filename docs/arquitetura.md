@@ -65,7 +65,7 @@ gaia/
 | 4 (feita) | Lembretes e foco | Agendador, lembretes escalonados, Modo Foco, âncoras, escala 24x72 |
 | 5 (feita) | Voz | SpeechRecognition e SpeechSynthesis pt-BR, orbe reagindo ao áudio real |
 | 6 (enxuta) | Pedidos (lembrete de prazo) e calendário de conteúdo | Finanças e kanban ficam fora, em outro app |
-| 7 | Bem-estar | Streaks, check-in de energia, revisão semanal, estudos |
+| 7 (feita) | Bem-estar | Streaks, check-in de energia, revisão semanal, estudos |
 | 8 | Polimento | PWA, quiosque, backup/exportação, configurações |
 
 ## Pendências conhecidas da Fase 1

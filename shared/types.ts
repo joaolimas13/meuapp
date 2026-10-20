@@ -262,6 +262,103 @@ export interface GeneralSettings {
   }
   /** Constância no Instagram: dias da semana de postagem (0=domingo) e horário do lembrete. */
   content: { days: number[]; remindAt: string }
+  /** Meta de horas de estudo por semana. */
+  study: { weeklyHours: number }
+  /** Aviso de desacelerar antes de dormir (HH:MM). */
+  sleep: { enabled: boolean; windDown: string }
+  /** Revisão semanal automática: dia (0=domingo) e horário. */
+  weekly: { enabled: boolean; day: number; time: string }
+}
+
+// ---------------------------------------------------------------- Fase 7: bem-estar e hábitos
+
+export interface Checkin {
+  id: number
+  date: string
+  time: string
+  /** 1 (sem energia) a 5 (muita energia). */
+  energy: number
+  /** 1 (mal) a 5 (ótimo). */
+  mood: number
+  note: string
+}
+
+export interface CheckinSummary {
+  /** Hora de perguntar: faz tempo desde o último check-in e é horário razoável. */
+  due: boolean
+  last: Checkin | null
+  today: Checkin[]
+  /** Blocos de 3 h com a média de energia (só os que têm dados). */
+  blocks: { label: string; avgEnergy: number; n: number }[]
+  /** Melhor bloco (precisa de pelo menos 6 check-ins no total). */
+  best: { label: string; avgEnergy: number; n: number } | null
+  suggestion: string
+}
+
+export interface StudyCard {
+  id: number
+  topic: string
+  question: string
+  answer: string
+  /** Caixa de Leitner (0 a 4): quanto maior, mais espaçada a próxima revisão. */
+  box: number
+  nextReview: string
+}
+
+export interface StudyView {
+  due: StudyCard[]
+  dueCount: number
+  total: number
+  weeklyHours: { goal: number; done: number }
+  topics: { topic: string; cards: number }[]
+}
+
+export interface TrainingEntry {
+  weekday: number
+  title: string
+  time: string
+}
+
+export type VaultStatus = 'guardada' | 'executar' | 'adiada' | 'descartada'
+export interface VaultItem {
+  id: number
+  title: string
+  notes: string
+  kind: 'ideia' | 'projeto'
+  status: VaultStatus
+  createdAt: string
+}
+
+export interface WellbeingSummary {
+  routineStreak: number
+  /** Dias dos últimos 7 em que pelo menos um checklist de âncora foi concluído por inteiro. */
+  routineDays7: number
+  tasksDoneToday: number
+  tasksDoneWeek: number
+  /** 10 pontos por tarefa concluída hoje (recompensa leve, sem punição). */
+  pointsToday: number
+  evolutionStreak: number
+  /** Mensagem encorajadora conforme a situação (nunca de cobrança). */
+  message: string
+}
+
+export interface WeeklyReview {
+  from: string
+  to: string
+  tasksDone: number
+  pending: number
+  toReschedule: number
+  avgScore: number
+  goodDays: number
+  bestDay: { date: string; score: number } | null
+  pages: number
+  avgSleep: number | null
+  studyHours: number
+  avgEnergy: number | null
+  routineDays: number
+  postsPosted: number
+  highlights: string[]
+  nextWeek: string[]
 }
 
 // ---------------------------------------------------------------- Pedidos e conteúdo (negócio 3D, versão enxuta)

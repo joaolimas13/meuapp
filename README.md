@@ -2,7 +2,7 @@
 
 Painel de comando pessoal para ficar ligado em uma tela dedicada, inspirado no J.A.R.V.I.S. e no GAIA de Horizon Zero Dawn.
 
-**Status:** Fase 6 enxuta (pedidos só como lembrete de prazo + calendário de conteúdo do Instagram). Finanças e gestão do negócio ficam em outro app, por escolha sua.
+**Status:** Fase 7 (bem-estar e hábitos), depois da Fase 6 enxuta (pedidos só como lembrete de prazo + calendário de conteúdo do Instagram). Finanças e gestão do negócio ficam em outro app, por escolha sua.
 
 ## Privacidade
 
@@ -149,3 +149,19 @@ Por decisão sua, o módulo "Negócio 3D" completo (kanban, estoque, orçamento,
 - Pelo chat/voz: "registre o pedido da Maria, miniatura do gato, entrega dia 25" e "guarda a ideia de Reel do chaveiro".
 
 Testes: `npm test` (backend) — 64 testes.
+
+## Fase 7 — Bem-estar e hábitos
+
+Tudo em tom de incentivo: nada vira lista vermelha de fracassos.
+
+- **Check-in de energia e humor** (cartão "Bem-estar" no painel): 1 toque por nota, no máximo 2 convites por dia, em horário razoável (7h–22h). Com pelo menos 6 check-ins, o GAIA descobre seus **melhores horários** (blocos de 3 h) e sugere encaixar aí as tarefas difíceis. Gráfico na aba Evolução.
+- **Sequências e pontos leves:** sequência de dias com a rotina (âncoras) completa, tarefas concluídas hoje/semana e pontos do dia. Se a sequência quebrar, a mensagem incentiva recomeçar.
+- **Estudos [U]:** cartões de pergunta/resposta com **revisão espaçada** (caixas de 1, 3, 7, 14 e 30 dias: Errei volta ao início, Difícil repete, Acertei avança). Meta de horas por semana nas Configurações. Peça ao GAIA: "crie cartões sobre o que estudei".
+- **Treinos:** plano semanal na aba Rotina. O GAIA cria a tarefa do treino no dia certo, uma vez só, e **não cria em dia de plantão**.
+- **Sono e desaceleração:** na hora configurada (padrão 22:00) aparece "Hora de desacelerar", a tela entra no modo noturno e o checklist "antes de dormir" fica à mão.
+- **Revisão semanal:** na aba Dia. Resumo do que concluiu, do que remarcar e do que priorizar. Lembrete automático no dia e hora configurados (padrão domingo 19:00).
+- **Cofre de ideias e projetos [G]:** guarde sem pressa; **Executar** cria uma tarefa, **Adiar** e **Descartar** tiram do caminho. Uma vez por mês o GAIA lembra de revisar.
+- **Voz e chat:** "Gaia, abrir estudos" / "abrir cofre"; ferramentas novas do chat: criar cartões, guardar no cofre, registrar check-in, revisão da semana.
+
+Testes: `cd backend && npm test` (72 testes). Dados novos ficam no mesmo SQLite local (migração 5, automática).
+

@@ -201,5 +201,5 @@ test('caixa de entrada: captura, lista pendentes e muda status', () => {
 
 test('banco: migrações são idempotentes (abrir de novo não quebra)', () => {
   const db = openDb(':memory:')
-  assert.equal(db.pragma('user_version', { simple: true }), 4)
+  assert.equal(db.pragma('user_version', { simple: true }), 5)
 })

@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import type { TrainingEntry } from '../../../shared/types'
 import { useLoad } from '../hooks/useLoad'
 import { api } from '../lib/api'
 import { getAudioPrefs, playCue, setAudioPrefs, speak, unlockAudio } from '../lib/sound'
 import { ErrorLine } from './ErrorLine'
+
+const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 /** Âncoras de rotina (checklists ligados a momentos do dia) e configurações de alerta/escala. */
 export function RoutineTab({ onChanged }: { onChanged: () => void }) {
@@ -11,6 +14,10 @@ export function RoutineTab({ onChanged }: { onChanged: () => void }) {
   const [open, setOpen] = useState<number | null>(null)
   const [newItem, setNewItem] = useState('')
   const [err, setErr] = useState<string | null>(null)
+  const training = useLoad(api.training, [])
+  const [tw, setTw] = useState(1)
+  const [tt, setTt] = useState('')
+  const [ttime, setTtime] = useState('18:00')
   const [audio, setAudio] = useState(getAudioPrefs())
 
   const act = async (fn: () => Promise<unknown>) => {
@@ -80,6 +87,42 @@ export function RoutineTab({ onChanged }: { onChanged: () => void }) {
             </div>
           </>
         )}
+      </section>
+
+      {g && (
+        <section className="space-y-2" data-testid="sleep-settings">
+          <h3 className="hud-title">Sono e revisão semanal</h3>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={g.sleep.enabled} onChange={(e) => save({ sleep: { enabled: e.target.checked } })} /> Aviso de “hora de desacelerar”</label>
+          {g.sleep.enabled && <label className="flex items-center gap-2">Desacelerar às <input type="time" className="hud-input" value={g.sleep.windDown} onChange={(e) => e.target.value && save({ sleep: { windDown: e.target.value } })} aria-label="Hora de desacelerar" /></label>}
+          <label className="flex items-center gap-2"><input type="checkbox" checked={g.weekly.enabled} onChange={(e) => save({ weekly: { enabled: e.target.checked } })} /> Lembrete da revisão semanal</label>
+          {g.weekly.enabled && (
+            <div className="flex items-center gap-2">
+              Todo(a)
+              <select className="hud-input" value={g.weekly.day} onChange={(e) => save({ weekly: { day: Number(e.target.value) } })} aria-label="Dia da revisão">{DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}</select>
+              às <input type="time" className="hud-input" value={g.weekly.time} onChange={(e) => e.target.value && save({ weekly: { time: e.target.value } })} aria-label="Hora da revisão" />
+            </div>
+          )}
+          <label className="flex items-center gap-2">Meta de estudo na semana <input type="number" min={0} className="hud-input w-20" value={g.study.weeklyHours} onChange={(e) => save({ study: { weeklyHours: Number(e.target.value) } })} aria-label="Horas de estudo por semana" /> h</label>
+        </section>
+      )}
+
+      <section className="space-y-2" data-testid="training-plan">
+        <h3 className="hud-title">Plano de treino</h3>
+        {(training.data ?? []).length === 0 && <p style={{ color: 'var(--text-dim)' }}>Sem treinos. O GAIA cria a tarefa no dia certo (nos dias de plantão ele não cobra).</p>}
+        <ul className="space-y-1">
+          {(training.data ?? []).map((e, idx) => (
+            <li key={`${e.weekday}-${e.title}-${idx}`} className="flex items-center justify-between gap-2">
+              <span>{DAYS[e.weekday]} {e.time} · {e.title}</span>
+              <button type="button" className="hud-btn" aria-label={`Remover treino ${e.title}`} onClick={() => act(async () => training.set(await api.saveTraining((training.data ?? []).filter((_, j) => j !== idx))))}>×</button>
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap gap-2">
+          <select className="hud-input" value={tw} onChange={(e) => setTw(Number(e.target.value))} aria-label="Dia do treino">{DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}</select>
+          <input type="time" className="hud-input" value={ttime} onChange={(e) => setTtime(e.target.value)} aria-label="Hora do treino" />
+          <input className="hud-input flex-1" placeholder="Treino (ex.: corrida leve)" value={tt} onChange={(e) => setTt(e.target.value)} aria-label="Nome do treino" />
+          <button type="button" className="hud-btn primary" disabled={!tt.trim() || !ttime} onClick={() => act(async () => { const next: TrainingEntry[] = [...(training.data ?? []), { weekday: tw, title: tt.trim(), time: ttime }]; training.set(await api.saveTraining(next)); setTt('') })}>Adicionar</button>
+        </div>
       </section>
 
       {g && (

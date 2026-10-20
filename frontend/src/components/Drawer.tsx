@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 
-export type TabId = 'chat' | 'inbox' | 'tasks' | 'day' | 'memories' | 'growth' | 'routine' | 'orders' | 'content'
+export type TabId = 'chat' | 'inbox' | 'tasks' | 'day' | 'memories' | 'growth' | 'routine' | 'orders' | 'content' | 'study' | 'vault'
 
 export const TABS: { id: TabId; label: string; key: string }[] = [
   { id: 'chat', label: 'Chat', key: 'C' },
@@ -10,6 +10,8 @@ export const TABS: { id: TabId; label: string; key: string }[] = [
   { id: 'day', label: 'Dia', key: 'D' },
   { id: 'orders', label: 'Pedidos', key: 'P' },
   { id: 'content', label: 'Conteúdo', key: 'K' },
+  { id: 'study', label: 'Estudos', key: 'U' },
+  { id: 'vault', label: 'Cofre', key: 'G' },
   { id: 'memories', label: 'Memórias', key: 'M' },
   { id: 'growth', label: 'Evolução', key: 'E' },
   { id: 'routine', label: 'Rotina', key: 'R' },

@@ -1,7 +1,7 @@
 // Interpretação dos comandos de voz (função pura: mesma lógica no navegador e nos testes).
 // Regra: "capturar rápido" nunca pergunta nada. Tudo o que não é comando vai para o chat.
 
-export type TabName = 'chat' | 'inbox' | 'tasks' | 'day' | 'memories' | 'growth' | 'routine' | 'orders' | 'content'
+export type TabName = 'chat' | 'inbox' | 'tasks' | 'day' | 'memories' | 'growth' | 'routine' | 'orders' | 'content' | 'study' | 'vault'
 
 export type VoiceCommand =
   | { type: 'wake' } // só disseram "Gaia": passa a ouvir o comando seguinte
@@ -43,6 +43,8 @@ const TABS: [RegExp, TabName][] = [
   [/\b(rotina|ancoras?|configuracoes)\b/, 'routine'],
   [/\b(pedidos?|encomendas?)\b/, 'orders'],
   [/\b(conteudo|instagram|reels?|calendario)\b/, 'content'],
+  [/\b(estudos?|revisao|revisoes|flashcards?)\b/, 'study'],
+  [/\b(cofre|ideias)\b/, 'vault'],
 ]
 
 /**
