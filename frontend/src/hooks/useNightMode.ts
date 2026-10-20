@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { CONFIG } from '../lib/config'
+import { useAppearance } from '../lib/appearance'
 import { useNow } from './useNow'
 
 export type NightOverride = 'auto' | 'on' | 'off'
@@ -13,7 +13,7 @@ export function useNightMode(windDown?: string | null) {
   const [override, setOverride] = useState<NightOverride>('auto')
 
   const h = now.getHours()
-  const { nightStartHour: start, nightEndHour: end } = CONFIG
+  const { nightStart: start, nightEnd: end } = useAppearance()
   let autoNight = start > end ? h >= start || h < end : h >= start && h < end
   // Desaceleração do sono: a tela já esquenta/escurece a partir da hora configurada (até o fim da noite).
   if (windDown && /^\d\d:\d\d$/.test(windDown)) {

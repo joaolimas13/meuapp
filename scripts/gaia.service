@@ -1,0 +1,18 @@
+# Serviço de usuário do systemd (Linux): sobe o backend do GAIA sozinho ao ligar o computador.
+# Instalar:
+#   mkdir -p ~/.config/systemd/user && cp scripts/gaia.service ~/.config/systemd/user/
+#   (edite WorkingDirectory abaixo para a pasta do projeto)
+#   systemctl --user daemon-reload && systemctl --user enable --now gaia
+#   loginctl enable-linger "$USER"     # opcional: sobe mesmo antes do login
+[Unit]
+Description=GAIA - assistente pessoal
+After=network.target
+
+[Service]
+WorkingDirectory=%h/gaia/backend
+ExecStart=/usr/bin/env npm start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

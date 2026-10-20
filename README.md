@@ -2,7 +2,7 @@
 
 Painel de comando pessoal para ficar ligado em uma tela dedicada, inspirado no J.A.R.V.I.S. e no GAIA de Horizon Zero Dawn.
 
-**Status:** Fase 7 (bem-estar e hábitos), depois da Fase 6 enxuta (pedidos só como lembrete de prazo + calendário de conteúdo do Instagram). Finanças e gestão do negócio ficam em outro app, por escolha sua.
+**Status:** v1.0 — Fase 8 (polimento) concluída, depois da Fase 7 (bem-estar e hábitos) e da Fase 6 enxuta (pedidos só como lembrete de prazo + calendário de conteúdo do Instagram). Finanças e gestão do negócio ficam em outro app, por escolha sua.
 
 ## Privacidade
 
@@ -64,7 +64,7 @@ Com o Chrome, em Windows/Linux:
 chrome --kiosk http://127.0.0.1:8787
 ```
 
-Pressione `F11` para tela cheia em um navegador normal. O empacotamento completo (PWA instalável, início automático) vem na Fase 8.
+Pressione `F11` para tela cheia em um navegador normal. Há scripts prontos (`scripts/iniciar-gaia.sh` e `.bat`) e o passo a passo completo, com início automático e atualização, em [docs/quiosque.md](docs/quiosque.md).
 
 ## Estrutura
 
@@ -164,4 +164,14 @@ Tudo em tom de incentivo: nada vira lista vermelha de fracassos.
 - **Voz e chat:** "Gaia, abrir estudos" / "abrir cofre"; ferramentas novas do chat: criar cartões, guardar no cofre, registrar check-in, revisão da semana.
 
 Testes: `cd backend && npm test` (72 testes). Dados novos ficam no mesmo SQLite local (migração 5, automática).
+
+## Fase 8 — Polimento (v1.0)
+
+- **Aba Ajustes [S]** (valem só para o aparelho): tema (ciano, verde Horizon, laranja Horizon), brilho, tamanho das letras, horário do modo noturno, tempo até o modo ambiente e modo leve (automático, sempre ou nunca).
+- **Modo leve automático:** se a tela rodar abaixo de ~28 quadros por segundo, o GAIA simplifica os efeitos sozinho (bom para o netbook).
+- **Backup:** um por dia em `backend/data/backups/` (7 últimos) e downloads na aba Ajustes: tudo em JSON, memórias em Markdown, banco SQLite. Restaurar = trocar o arquivo `gaia.sqlite` (ver [docs/quiosque.md](docs/quiosque.md)).
+- **App instalável (PWA):** ícones, manifesto e service worker; a interface abre mesmo se o backend estiver desligado (e avisa). Mantém a tela acesa (Wake Lock).
+- **Quiosque:** scripts para Linux/Windows e serviço systemd em `scripts/`.
+
+Testes: `cd backend && npm test` (75 testes).
 

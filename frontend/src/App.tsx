@@ -35,14 +35,17 @@ import { useLoad } from './hooks/useLoad'
 import { useToday } from './hooks/useToday'
 import { api } from './lib/api'
 import { useNightMode } from './hooks/useNightMode'
-import { CONFIG } from './lib/config'
 import { playCue, speak, unlockAudio } from './lib/sound'
 import { useVoice } from './hooks/useVoice'
 import { TokenGate } from './components/TokenGate'
+import { SettingsTab } from './components/SettingsTab'
+import { setAppearance, useAppearance } from './lib/appearance'
+import { useAutoLite } from './hooks/useAutoLite'
+import { useWakeLock } from './hooks/useWakeLock'
 import type { VoiceCommand } from '../../shared/voiceCommands'
 
 // Teclas de teste do orbe. Com o chat aberto, o estado real (pensando/falando) tem prioridade.
-const TAB_KEYS: Record<string, TabId> = { c: 'chat', i: 'inbox', t: 'tasks', d: 'day', p: 'orders', k: 'content', m: 'memories', e: 'growth', r: 'routine', u: 'study', g: 'vault' }
+const TAB_KEYS: Record<string, TabId> = { c: 'chat', i: 'inbox', t: 'tasks', d: 'day', p: 'orders', k: 'content', m: 'memories', e: 'growth', r: 'routine', u: 'study', g: 'vault', s: 'settings' }
 
 const STATE_KEYS: Record<string, OrbState> = {
   '1': 'idle',
@@ -60,11 +63,14 @@ function isTyping(target: EventTarget | null) {
 
 export default function App() {
   const [manualOrb, setManualOrb] = useState<OrbState>('idle')
-  const [lite, setLite] = useState(false)
+  const appearance = useAppearance()
+  const autoSlow = useAutoLite(appearance.lite === 'auto')
+  const lite = appearance.lite === 'on' || autoSlow // 'auto' liga sozinho se a máquina estiver lenta
+  useWakeLock()
   const [tab, setTab] = useState<TabId | null>(null) // null = gaveta fechada
   const [version, setVersion] = useState(0) // sobe quando algo muda (recarrega os painéis)
   const bump = useCallback(() => setVersion((v) => v + 1), [])
-  const { ambient, wakeKey, sleep } = useAmbient(CONFIG.ambientAfterSec * 1000)
+  const { ambient, wakeKey, sleep } = useAmbient(appearance.ambientSec * 1000)
   const generalSettings = useLoad(api.settings, [version])
   const night = useNightMode(generalSettings.data?.sleep.enabled ? generalSettings.data.sleep.windDown : null)
   const chat = useChat(bump)
@@ -150,7 +156,7 @@ export default function App() {
       const k = e.key.toLowerCase()
       if (k in STATE_KEYS) setManualOrb(STATE_KEYS[k])
       else if (k === 'n') night.cycle()
-      else if (k === 'l') setLite((v) => !v)
+      else if (k === 'l') setAppearance({ lite: lite ? 'off' : 'on' })
       else if (k === 'a') sleep()
       else if (k === 'f') setFocusOpen((v) => !v)
       else if (k === 'v') voice.toggle()
@@ -161,7 +167,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [night, sleep, voice.toggle])
+  }, [night, sleep, voice.toggle, lite])
 
   // Foco em andamento (ex.: ao reabrir a página): volta para a tela de foco.
   const hadFocus = !!focusNow.data?.session
@@ -171,7 +177,9 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.mode = night.night ? 'night' : 'day'
     document.documentElement.dataset.lite = String(lite)
-  }, [night.night, lite])
+    document.documentElement.dataset.theme = appearance.theme
+    document.documentElement.style.setProperty('--font-scale', String(appearance.fontScale / 100))
+  }, [night.night, lite, appearance.theme, appearance.fontScale])
 
   // Colunas laterais somem suavemente no modo ambiente; a da direita também recua com o chat aberto.
   const interactive = (hidden: boolean) => ({
@@ -215,10 +223,10 @@ export default function App() {
             className="hud-title border px-3 py-1"
             style={{ borderColor: tab ? 'var(--cyan)' : 'var(--line)', fontSize: '0.65rem' }}
           >
-            Painel [C·I·T·D·P·K·U·G·M·E·R]{inbox.data && inbox.data.length > 0 ? ` · ${inbox.data.length}` : ''}
+            Painel [C·I·T·D·P·K·U·G·M·E·R·S]{inbox.data && inbox.data.length > 0 ? ` · ${inbox.data.length}` : ''}
           </button>
           <span className="mono text-xs" style={{ color: 'var(--text-dim)' }}>
-            v0.7 · FASE 7
+            v1.0 · FASE 8
           </span>
         </div>
       </header>
@@ -264,6 +272,9 @@ export default function App() {
         </motion.div>
       </main>
 
+      {appearance.brightness < 100 && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-[60]" style={{ background: '#000', opacity: 1 - appearance.brightness / 100 }} />
+      )}
       <TokenGate />
       {voice.heard && voice.mode !== 'off' && (
         <div className="mono pointer-events-none fixed bottom-16 left-1/2 z-30 -translate-x-1/2 text-sm" style={{ color: 'var(--text-dim)' }} aria-live="polite">
@@ -298,6 +309,7 @@ export default function App() {
             {tab === 'routine' && <RoutineTab onChanged={bump} />}
             {tab === 'orders' && <PedidosTab version={version} today={todayStr} onChanged={bump} />}
             {tab === 'content' && <ContentTab version={version} today={todayStr} onChanged={bump} />}
+            {tab === 'settings' && <SettingsTab lite={lite} autoSlow={autoSlow} />}
             {tab === 'study' && <StudyTab version={version} onChanged={bump} />}
             {tab === 'vault' && <VaultTab version={version} onChanged={bump} />}
             {tab === 'memories' && <MemoriesTab version={version} />}

@@ -12,6 +12,7 @@ import { devRoutes } from './routes/dev'
 import { inboxRoutes } from './routes/inbox'
 import { memoryRoutes } from './routes/memories'
 import { routineRoutes } from './routes/routine'
+import { backupRoutes } from './routes/backup'
 import { wellbeingRoutes } from './routes/wellbeing'
 import { taskRoutes } from './routes/tasks'
 import { createServices } from './services'
@@ -67,6 +68,7 @@ export function buildServer(deps: Deps): FastifyInstance {
   routineRoutes(app, s)
   contentRoutes(app, s)
   wellbeingRoutes(app, s)
+  backupRoutes(app, s, deps.db)
 
   // Serve a interface compilada (npm run build) quando existir: um único servidor para tudo.
   if (fs.existsSync(deps.config.staticDir)) {

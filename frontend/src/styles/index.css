@@ -32,8 +32,20 @@
   --glow: 0 0 14px rgba(255, 154, 60, 0.25);
 }
 
-/* Tamanho base escala com a tela: legível de longe em 1080p e 4K. */
-html { font-size: clamp(14px, 0.55vw + 8px, 26px); }
+/* Temas alternativos (só de dia; à noite vale sempre a paleta quente). */
+html[data-theme="horizon"]:not([data-mode="night"]) {
+  --bg: #030b06; --bg-2: #0a2012; --cyan: #5dff9a; --amber: #ffd166;
+  --text: #dcffe9; --text-dim: #7fb894; --panel: rgba(8, 32, 18, 0.55);
+  --line: rgba(93, 255, 154, 0.28); --glow: 0 0 18px rgba(93, 255, 154, 0.35);
+}
+html[data-theme="laranja"]:not([data-mode="night"]) {
+  --bg: #0b0603; --bg-2: #221208; --cyan: #ff8a3d; --amber: #ffd24a;
+  --text: #ffe9d6; --text-dim: #b8906e; --panel: rgba(34, 18, 8, 0.55);
+  --line: rgba(255, 138, 61, 0.3); --glow: 0 0 18px rgba(255, 138, 61, 0.35);
+}
+
+/* Tamanho base escala com a tela: legível de longe em 1080p e 4K. --font-scale vem dos Ajustes. */
+html { font-size: calc(clamp(14px, 0.55vw + 8px, 26px) * var(--font-scale, 1)); }
 html, body, #root { height: 100%; margin: 0; }
 body {
   background: radial-gradient(ellipse at 50% 40%, var(--bg-2) 0%, var(--bg) 70%);
